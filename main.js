@@ -1,15 +1,25 @@
-let input = document.getElementById("input");
-let savei = document.getElementById("savei");
-let savet = document.getElementById("savet");
-let list = document.getElementById("list");
-let leads = []
+// chrome://extensions/
+let myLeads = []
+const inputEl = document.getElementById("input-el")
+const inputBtn = document.getElementById("input-btn")
+const ulEl = document.getElementById("ul-el")
 
-savei.addEventListener("click", function(){
-    leads.push(input.value)
-    
-});
+inputBtn.addEventListener("click", function() {
+    myLeads.push(inputEl.value)
+    inputEl.value = ""
+    renderLeads()
+})
 
-for(i of leads){
-    list.innerHTML += `<li class="list-group-item"><a href="${i}">${i}</a></li>`
+function renderLeads() {
+    let listItems = ""
+    for (let i = 0; i < myLeads.length; i++) {
+        listItems += `
+            <li>
+                <a target='_blank' href='${myLeads[i]}'>
+                    ${myLeads[i]}
+                </a>
+            </li>
+        `
+    }
+    ulEl.innerHTML = listItems  
 }
-    
