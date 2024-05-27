@@ -1,25 +1,31 @@
-// chrome://extensions/
-let myLeads = []
-const inputEl = document.getElementById("input-el")
+let leads = JSON.parse(localStorage.getItem("leads"))
+const input = document.getElementById("input")
 const inputBtn = document.getElementById("input-btn")
-const ulEl = document.getElementById("ul-el")
+const list = document.getElementById("list")
+
 
 inputBtn.addEventListener("click", function() {
-    myLeads.push(inputEl.value)
+    leads.push(inputEl.value)
+    localStorage.setItem("leads", JSON.stringify(myLeads))
     inputEl.value = ""
     renderLeads()
 })
 
 function renderLeads() {
     let listItems = ""
-    for (let i = 0; i < myLeads.length; i++) {
+    for (let i = 0; i < leads.length; i++) {
         listItems += `
             <li>
-                <a target='_blank' href='${myLeads[i]}'>
-                    ${myLeads[i]}
+                <a target='_blank' href='${leads[i]}'>
+                    ${leads[i]}
                 </a>
             </li>
         `
     }
-    ulEl.innerHTML = listItems  
+    list.innerHTML = listItems  
+}
+
+function initiate(){
+    leads = []
+    localStorage.setItem("leads", "")
 }
