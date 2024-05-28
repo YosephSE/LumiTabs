@@ -1,4 +1,4 @@
-// DOM Variable
+// DOM Variables
 let myLeads = []
 const inputEl = document.getElementById("input-el")
 const inputBtn = document.getElementById("input-btn")
@@ -7,16 +7,13 @@ const deleteBtn = document.getElementById("delete-btn")
 const leadsFromLocalStorage = JSON.parse( localStorage.getItem("myLeads"))
 const tabBtn = document.getElementById("tab-btn")
 const alltabBtn = document.getElementById("alltab-btn")
-
-
+const exportBtn = document.getElementById("export-btn")
 
 // Load from localstorage
 if (leadsFromLocalStorage) {
     myLeads = leadsFromLocalStorage
     render()
 }
-
-
 
 // Input button event
 inputBtn.addEventListener("click", function() {
@@ -25,8 +22,6 @@ inputBtn.addEventListener("click", function() {
     localStorage.setItem("myLeads", JSON.stringify(myLeads) )
     render()
 })
-
-
 
 // Tab button event
 tabBtn.addEventListener("click", function(){    
@@ -37,8 +32,6 @@ tabBtn.addEventListener("click", function(){
     })
 })
 
-
-
 // All tabs button event
 alltabBtn.addEventListener("click", function(){    
     chrome.tabs.query({currentWindow: true}, function(tabs){
@@ -48,9 +41,7 @@ alltabBtn.addEventListener("click", function(){
         localStorage.setItem("myLeads", JSON.stringify(myLeads));
         render();
     });
-});
-
-
+})
 
 // Delete button event
 deleteBtn.addEventListener("click", function() {
@@ -59,7 +50,10 @@ deleteBtn.addEventListener("click", function() {
     render()
 })
 
-
+// Export button event
+exportBtn.addEventListener("click", function() {
+    exportToCSV(myLeads);
+})
 
 // Render function
 function render(leads = myLeads) {
@@ -76,3 +70,14 @@ function render(leads = myLeads) {
     olEl.innerHTML = listItems
 }
 
+// Export to CSV function
+function exportToCSV(leads) {
+    const csvContent = "data:text/csv;charset=utf-8," + leads.map(lead => lead).join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "leads.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
