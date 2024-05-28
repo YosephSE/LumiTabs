@@ -1,17 +1,25 @@
-let leads = JSON.parse(localStorage.getItem("leads"))
-const input = document.getElementById("input")
+let myLeads = []
+const inputEl = document.getElementById("input-el")
 const inputBtn = document.getElementById("input-btn")
-const list = document.getElementById("list")
+const ulEl = document.getElementById("ul-el")
+const deleteBtn = document.getElementById("delete-btn")
+const leadsFromLocalStorage = JSON.parse( localStorage.getItem("myLeads") )
+const tabBtn = document.getElementById("tab-btn")
 
+if (leadsFromLocalStorage) {
+    myLeads = leadsFromLocalStorage
+    render(myLeads)
+}
 
-inputBtn.addEventListener("click", function() {
-    leads.push(inputEl.value)
-    localStorage.setItem("leads", JSON.stringify(myLeads))
-    inputEl.value = ""
-    renderLeads()
+tabBtn.addEventListener("click", function(){    
+    chrome.tabs.query({active: true, currentWindow: true}, function(tabs){
+        myLeads.push(tabs[0].url)
+        localStorage.setItem("myLeads", JSON.stringify(myLeads) )
+        render(myLeads)
+    })
 })
 
-function renderLeads() {
+function render(leads) {
     let listItems = ""
     for (let i = 0; i < leads.length; i++) {
         listItems += `
@@ -22,10 +30,18 @@ function renderLeads() {
             </li>
         `
     }
-    list.innerHTML = listItems  
+    ulEl.innerHTML = listItems
 }
 
-function initiate(){
-    leads = []
-    localStorage.setItem("leads", "")
-}
+deleteBtn.addEventListener("dblclick", function() {
+    localStorage.clear()
+    myLeads = []
+    render(myLeads)
+})
+
+inputBtn.addEventListener("click", function() {
+    myLeads.push(inputEl.value)
+    inputEl.value = ""
+    localStorage.setItem("myLeads", JSON.stringify(myLeads) )
+    render(myLeads)
+})
