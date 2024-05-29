@@ -92,6 +92,7 @@ function exportToCSV(leads) {
     document.body.removeChild(link);
 }
 
+// Delete function
 function deleteI(i){
     myLeads.splice(i, 1)
     render()
