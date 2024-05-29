@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
-    "version": "1.0",
-    "name": "Lead Tracker",
+    "version": "2.0",
+    "name": "LumiTabs",
     "action": {
         "default_popup": "index.html",
         "default_icon": "image.png"

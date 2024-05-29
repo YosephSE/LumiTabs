@@ -31,10 +31,14 @@ ol {
     margin-top: 20px;
     padding-left: 10px;
     margin-left: 5px;
+    
 }
 
 li {
     margin-top: 5px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
 }
 li:hover {
     opacity: 0.5;
@@ -50,3 +54,6 @@ a {
 }
 
 
+.delete-btn {
+    
+}
