@@ -57,17 +57,27 @@ exportBtn.addEventListener("click", function() {
 
 // Render function
 function render(leads = myLeads) {
-    let listItems = ""
+    let listItems = "";
     for (let i = 0; i < leads.length; i++) {
         listItems += `
             <li>
                 <a target='_blank' href='${leads[i]}'>
                     ${leads[i]}
                 </a>
+                <button class='delete-btn' data-index='${i}'>DELETE</button>
             </li>
-        `
+        `;
     }
-    olEl.innerHTML = listItems
+    olEl.innerHTML = listItems;
+
+    // Add event listeners to all delete buttons
+    const deleteButtons = document.querySelectorAll('.delete-btn');
+    deleteButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const index = this.getAttribute('data-index');
+            deleteI(index);
+        });
+    });
 }
 
 // Export to CSV function
@@ -80,4 +90,9 @@ function exportToCSV(leads) {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+}
+
+function deleteI(i){
+    myLeads.splice(i, 1)
+    render()
 }
