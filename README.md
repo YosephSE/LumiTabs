@@ -45,7 +45,8 @@ Welcome to **LumiTabs**! This extension is designed to help you manage and save 
 
 ## Screenshot
 
-![LumiTabs Screenshot](assets/img/screenshot.png)
+![image](https://github.com/YosephSE/LeadTracker/assets/88291669/5b0267e7-42c1-48c9-a17d-d33d4ee66799)
+
 
 ## Development
 
