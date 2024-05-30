@@ -64,7 +64,7 @@ function render(leads = myLeads) {
                 <a target='_blank' href='${leads[i]}'>
                     ${leads[i]}
                 </a>
-                <img src="D.png" class='delete-btn' data-index='${i}'>
+                <img src="D.png" class='delete-btn' index='${i}'>
             </li>
         `;
     }
@@ -74,7 +74,7 @@ function render(leads = myLeads) {
     const deleteButtons = document.querySelectorAll('.delete-btn');
     deleteButtons.forEach(button => {
         button.addEventListener('click', function() {
-            const index = this.getAttribute('data-index');
+            const index = this.getAttribute('index');
             deleteI(index);
         });
     });
