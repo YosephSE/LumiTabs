@@ -64,7 +64,7 @@ function render(leads = myLeads) {
                 <a target='_blank' href='${leads[i]}'>
                     ${leads[i]}
                 </a>
-                <img src="D.png" class='delete-btn' index='${i}'>
+                <img src="assets/img/D.png" class='delete-btn' index='${i}'>
             </li>
         `;
     }
