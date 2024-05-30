@@ -64,7 +64,7 @@ function render(leads = myLeads) {
                 <a target='_blank' href='${leads[i]}'>
                     ${leads[i]}
                 </a>
-                <button class='delete-btn' data-index='${i}'>DELETE</button>
+                <img src="D.png" class='delete-btn' data-index='${i}'>
             </li>
         `;
     }
@@ -95,5 +95,6 @@ function exportToCSV(leads) {
 // Delete function
 function deleteI(i){
     myLeads.splice(i, 1)
+    localStorage.setItem("myLeads", JSON.stringify(myLeads));
     render()
 }
