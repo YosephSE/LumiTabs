@@ -43,7 +43,7 @@ alltabBtn.addEventListener("click", function(){
     });
 })
 
-// Delete button event
+// Delete all button event
 deleteBtn.addEventListener("click", function() {
     localStorage.clear()
     myLeads = []
