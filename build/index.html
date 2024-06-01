@@ -2,16 +2,21 @@
   <head>
     <link rel="stylesheet" href="assets/css/style.css" />
   </head>
-  <body>
-    <input type="text" id="input-el" class=""/>
-    <div class="buttons">
-      <button class="" id="input-btn">SAVE INPUT</button>
-      <button id="tab-btn">SAVE TAB</button>
-      <button id="alltab-btn">SAVE All TABS</button>
-      <button id="delete-btn">DELETE ALL</button>
-      <button id="export-btn">EXPORT</button>
+  <body class="bg-gray-100 p-2">
+    <div class="w-full bg-white p-2 rounded-lg shadow-md">
+      <div class="relative z-0 w-full mb-5 group">
+        <input type="text" name="input" id="input" class="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" " required />
+        <label for="input" class="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Email address</label>
     </div>
-    <ol id="ol-el"></ol>
+      <div class="flex  space-y-1">
+        <button class="bg-blue-500 hover:bg-blue-700 text-white text-sm py-1 px-2 rounded" id="input-btn">SAVE INPUT</button>
+        <button class="bg-green-500 hover:bg-green-700 text-white text-sm py-1 px-2 rounded" id="tab-btn">SAVE TAB</button>
+        <button class="bg-yellow-500 hover:bg-yellow-700 text-white text-sm py-1 px-2 rounded" id="alltab-btn">SAVE ALL TABS</button>
+        <button class="bg-red-500 hover:bg-red-700 text-white text-sm py-1 px-2 rounded" id="delete-btn">DELETE ALL</button>
+        <button class="bg-indigo-500 hover:bg-indigo-700 text-white text-sm py-1 px-2 rounded" id="export-btn">EXPORT</button>
+      </div>
+      <ol id="ol-el" class="mt-2 list-decimal list-inside bg-gray-50 p-2 rounded-md shadow-inner text-sm"></ol>
+    </div>
     <script src="assets/js/main.js"></script>
   </body>
 </html>
