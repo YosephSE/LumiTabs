@@ -62,10 +62,10 @@ function render(leads = myLeads) {
         listItems += `
             
                 <li class="flex justify-between py-2 my-1">
-                <a class="w-4/5" target='_blank' href='${leads[i]}'>
+                <a class="w-4/5 hover:text-green-500" target='_blank' href='${leads[i]}'>
                     ${i+1}. ${leads[i]}
                 </a>
-                <img src="assets/img/D.png" class='delete-btn ' index='${i}'></li>
+                <img src="assets/img/D.png" class='delete-btn hover:scale-125' index='${i}'></li>
             
         `;
     }
