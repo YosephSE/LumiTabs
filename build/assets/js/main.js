@@ -1,5 +1,5 @@
 // DOM Variables
-let myLeads = []
+let myLeads = {}
 const inputEl = document.getElementById("input")
 const inputBtn = document.getElementById("input-btn")
 const olEl = document.getElementById("ol-el")
@@ -26,7 +26,7 @@ inputBtn.addEventListener("click", function() {
 // Tab button event
 tabBtn.addEventListener("click", function(){    
     chrome.tabs.query({active: true, currentWindow: true}, function(tabs){
-        myLeads.push(tabs[0].url)
+        myLeads[tabs[0].title] = tabs[0].url
         localStorage.setItem("myLeads", JSON.stringify(myLeads) )
         render()
     })
@@ -36,7 +36,7 @@ tabBtn.addEventListener("click", function(){
 alltabBtn.addEventListener("click", function(){    
     chrome.tabs.query({currentWindow: true}, function(tabs){
         for (let tab of tabs) {
-            myLeads.push(tab.url);
+            myLeads[tab.title] = tab.url
         }
         localStorage.setItem("myLeads", JSON.stringify(myLeads));
         render();
@@ -46,7 +46,7 @@ alltabBtn.addEventListener("click", function(){
 // Delete all button event
 deleteBtn.addEventListener("click", function() {
     localStorage.clear()
-    myLeads = []
+    myLeads = {}
     render()
 })
 
@@ -58,17 +58,19 @@ exportBtn.addEventListener("click", function() {
 // Render function
 function render(leads = myLeads) {
     let listItems = "";
-    for (let i = 0; i < leads.length; i++) {
+    Object.keys(leads).forEach(key => {
         listItems += `
             
                 <li class="flex justify-between py-2 my-1">
-                <a class="w-4/5 hover:text-green-500" target='_blank' href='${leads[i]}'>
-                    ${i+1}. ${leads[i]}
+                <a class="w-4/5 hover:text-green-500" target='_blank' href='${leads[key]}'>
+                    ${key}
                 </a>
-                <img src="assets/img/D.png" class='delete-btn hover:scale-125' index='${i}'></li>
+                <img src="assets/img/D.png" class='delete-btn hover:scale-125' index='${key}'></li>
             
         `;
-    }
+    });
+
+    // Insert list items
     olEl.innerHTML = listItems;
 
     // Add event listeners to all delete buttons
@@ -76,7 +78,7 @@ function render(leads = myLeads) {
     deleteButtons.forEach(button => {
         button.addEventListener('click', function() {
             const index = this.getAttribute('index');
-            deleteI(index);
+            deleteI(key);
         });
     });
 }
@@ -94,8 +96,8 @@ function exportToCSV(leads) {
 }
 
 // Delete function
-function deleteI(i){
-    myLeads.splice(i, 1)
+function deleteI(key){
+    delete myLeads.key
     localStorage.setItem("myLeads", JSON.stringify(myLeads));
     render()
 }
