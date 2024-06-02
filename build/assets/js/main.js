@@ -1,5 +1,5 @@
 // DOM Variables
-let myLeads = []
+let myLeads = {}
 const inputEl = document.getElementById("input")
 const inputBtn = document.getElementById("input-btn")
 const olEl = document.getElementById("ol-el")
@@ -15,18 +15,10 @@ if (leadsFromLocalStorage) {
     render()
 }
 
-// Input button event
-inputBtn.addEventListener("click", function() {
-    myLeads.push(inputEl.value)
-    inputEl.value = ""
-    localStorage.setItem("myLeads", JSON.stringify(myLeads) )
-    render()
-})
-
 // Tab button event
 tabBtn.addEventListener("click", function(){    
     chrome.tabs.query({active: true, currentWindow: true}, function(tabs){
-        myLeads.push(tabs[0].url)
+        myLeads[tabs[0].title] = tabs[0].url
         localStorage.setItem("myLeads", JSON.stringify(myLeads) )
         render()
     })
@@ -36,7 +28,7 @@ tabBtn.addEventListener("click", function(){
 alltabBtn.addEventListener("click", function(){    
     chrome.tabs.query({currentWindow: true}, function(tabs){
         for (let tab of tabs) {
-            myLeads.push(tab.url);
+            myLeads[tab.title] = tab.url
         }
         localStorage.setItem("myLeads", JSON.stringify(myLeads));
         render();
@@ -46,7 +38,7 @@ alltabBtn.addEventListener("click", function(){
 // Delete all button event
 deleteBtn.addEventListener("click", function() {
     localStorage.clear()
-    myLeads = []
+    myLeads = {}
     render()
 })
 
@@ -58,17 +50,17 @@ exportBtn.addEventListener("click", function() {
 // Render function
 function render(leads = myLeads) {
     let listItems = "";
-    for (let i = 0; i < leads.length; i++) {
+    Object.keys(leads).forEach(key => {
         listItems += `
-            
-                <li class="flex justify-between py-2 my-1">
-                <a class="w-4/5 hover:text-green-500" target='_blank' href='${leads[i]}'>
-                    ${i+1}. ${leads[i]}
+            <li class="flex justify-between py-2 my-1">
+                <a class="w-4/5 hover:text-green-500" target='_blank' href='${leads[key]}'>
+                    ${key}
                 </a>
-                <img src="assets/img/D.png" class='delete-btn hover:scale-125' index='${i}'></li>
-            
+                <img src="assets/img/D.png" class='delete-btn hover:scale-125' index='${key}'></li>
         `;
-    }
+    });
+
+    // Insert list items
     olEl.innerHTML = listItems;
 
     // Add event listeners to all delete buttons
@@ -81,21 +73,37 @@ function render(leads = myLeads) {
     });
 }
 
+
 // Export to CSV function
 function exportToCSV(leads) {
-    const csvContent = "data:text/csv;charset=utf-8," + leads.map(lead => lead).join("\n");
+    // Create an array of key-value pairs as strings with headers "Title,URL"
+    const csvRows = [
+        "Title,URL", // Add the header row
+        ...Object.entries(leads).map(([key, value]) => `${key},${value}`)
+    ];
+    
+    // Join the rows with newline characters
+    const csvContent = "data:text/csv;charset=utf-8," + csvRows.join("\n");
+    
+    // Encode the CSV content
     const encodedUri = encodeURI(csvContent);
+    
+    // Create a temporary link element for downloading the CSV
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
     link.setAttribute("download", "leads.csv");
+    
+    // Append the link to the body, trigger a click, and remove the link
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
 }
 
+
+
 // Delete function
-function deleteI(i){
-    myLeads.splice(i, 1)
+function deleteI(key){
+    delete myLeads[key]
     localStorage.setItem("myLeads", JSON.stringify(myLeads));
     render()
 }
