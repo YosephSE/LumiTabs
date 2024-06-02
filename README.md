@@ -4,9 +4,6 @@ Welcome to **LumiTabs**! This extension is designed to help you manage and save 
 
 ## Features
 
-### Save Input
-- **Save Custom Links**: Manually enter and save links using the input field. Perfect for keeping track of important URLs without having them open in a tab.
-
 ### Save Tabs
 - **Save Current Tab**: Save the URL of your current active tab with a single click. 
 - **Save All Tabs**: Capture all the URLs from your open tabs in the current window.
@@ -45,7 +42,8 @@ Welcome to **LumiTabs**! This extension is designed to help you manage and save 
 
 ## Screenshot
 
-![alt text](image.png)
+![image](https://github.com/YosephSE/LumiTabs/assets/88291669/09bde6ed-b3c2-444a-815e-87574fe96662)
+
 
 
 ## Development
