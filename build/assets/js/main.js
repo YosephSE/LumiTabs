@@ -15,14 +15,6 @@ if (leadsFromLocalStorage) {
     render()
 }
 
-// Input button event
-inputBtn.addEventListener("click", function() {
-    myLeads.push(inputEl.value)
-    inputEl.value = ""
-    localStorage.setItem("myLeads", JSON.stringify(myLeads) )
-    render()
-})
-
 // Tab button event
 tabBtn.addEventListener("click", function(){    
     chrome.tabs.query({active: true, currentWindow: true}, function(tabs){
@@ -60,13 +52,11 @@ function render(leads = myLeads) {
     let listItems = "";
     Object.keys(leads).forEach(key => {
         listItems += `
-            
-                <li class="flex justify-between py-2 my-1">
+            <li class="flex justify-between py-2 my-1">
                 <a class="w-4/5 hover:text-green-500" target='_blank' href='${leads[key]}'>
                     ${key}
                 </a>
                 <img src="assets/img/D.png" class='delete-btn hover:scale-125' index='${key}'></li>
-            
         `;
     });
 
@@ -78,26 +68,42 @@ function render(leads = myLeads) {
     deleteButtons.forEach(button => {
         button.addEventListener('click', function() {
             const index = this.getAttribute('index');
-            deleteI(key);
+            deleteI(index);
         });
     });
 }
 
+
 // Export to CSV function
 function exportToCSV(leads) {
-    const csvContent = "data:text/csv;charset=utf-8," + leads.map(lead => lead).join("\n");
+    // Create an array of key-value pairs as strings with headers "Title,URL"
+    const csvRows = [
+        "Title,URL", // Add the header row
+        ...Object.entries(leads).map(([key, value]) => `${key},${value}`)
+    ];
+    
+    // Join the rows with newline characters
+    const csvContent = "data:text/csv;charset=utf-8," + csvRows.join("\n");
+    
+    // Encode the CSV content
     const encodedUri = encodeURI(csvContent);
+    
+    // Create a temporary link element for downloading the CSV
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
     link.setAttribute("download", "leads.csv");
+    
+    // Append the link to the body, trigger a click, and remove the link
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
 }
 
+
+
 // Delete function
 function deleteI(key){
-    delete myLeads.key
+    delete myLeads[key]
     localStorage.setItem("myLeads", JSON.stringify(myLeads));
     render()
 }
