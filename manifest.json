@@ -3,8 +3,8 @@
     "version": "2.0",
     "name": "LumiTabs",
     "action": {
-        "default_popup": "index.html",
-        "default_icon": "assets/img/image.png"
+        "default_popup": "build/index.html",
+        "default_icon": "build/assets/img/image.png"
     },
     "permissions": [
         "tabs"
