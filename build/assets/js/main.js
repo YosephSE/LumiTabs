@@ -1,6 +1,6 @@
 // DOM Variables
 let myLeads = []
-const inputEl = document.getElementById("input-el")
+const inputEl = document.getElementById("input")
 const inputBtn = document.getElementById("input-btn")
 const olEl = document.getElementById("ol-el")
 const deleteBtn = document.getElementById("delete-btn")
@@ -60,12 +60,13 @@ function render(leads = myLeads) {
     let listItems = "";
     for (let i = 0; i < leads.length; i++) {
         listItems += `
-            <li>
-                <a target='_blank' href='${leads[i]}'>
-                    ${leads[i]}
+            
+                <li class="flex justify-between py-2 my-1">
+                <a class="w-4/5" target='_blank' href='${leads[i]}'>
+                    ${i+1}. ${leads[i]}
                 </a>
-                <img src="assets/img/D.png" class='delete-btn' index='${i}'>
-            </li>
+                <img src="assets/img/D.png" class='delete-btn ' index='${i}'></li>
+            
         `;
     }
     olEl.innerHTML = listItems;
