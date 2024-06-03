@@ -75,7 +75,7 @@ function render(leads = myLeads) {
 // Export to CSV function
 function exportToCSV(leads) {
     const csvRows = [
-        "Title,URL",
+        "URL,Title",
         ...Object.entries(leads).map(([key, value]) => `${key},${value}`)
     ];
     const csvContent = "data:text/csv;charset=utf-8," + csvRows.join("\n");
