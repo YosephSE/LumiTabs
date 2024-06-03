@@ -1,7 +1,5 @@
 // DOM Variables
 let myLeads = {}
-const inputEl = document.getElementById("input")
-const inputBtn = document.getElementById("input-btn")
 const olEl = document.getElementById("ol-el")
 const deleteBtn = document.getElementById("delete-btn")
 const leadsFromLocalStorage = JSON.parse( localStorage.getItem("myLeads"))
@@ -18,7 +16,7 @@ if (leadsFromLocalStorage) {
 // Tab button event
 tabBtn.addEventListener("click", function(){    
     chrome.tabs.query({active: true, currentWindow: true}, function(tabs){
-        myLeads[tabs[0].title] = tabs[0].url
+        myLeads[tabs[0].url] = tabs[0].title
         localStorage.setItem("myLeads", JSON.stringify(myLeads) )
         render()
     })
@@ -28,7 +26,7 @@ tabBtn.addEventListener("click", function(){
 alltabBtn.addEventListener("click", function(){    
     chrome.tabs.query({currentWindow: true}, function(tabs){
         for (let tab of tabs) {
-            myLeads[tab.title] = tab.url
+            myLeads[tab.url] = tab.title
         }
         localStorage.setItem("myLeads", JSON.stringify(myLeads));
         render();
@@ -53,8 +51,8 @@ function render(leads = myLeads) {
     Object.keys(leads).forEach(key => {
         listItems += `
             <li class="flex justify-between py-2 my-1">
-                <a class="w-4/5 hover:text-green-500" target='_blank' href='${leads[key]}'>
-                    ${key}
+                <a class="w-4/5 hover:text-green-500" target='_blank' href='${key}'>
+                    ${leads[key]}
                 </a>
                 <img src="assets/img/D.png" class='delete-btn hover:scale-125' index='${key}'></li>
         `;
@@ -76,24 +74,15 @@ function render(leads = myLeads) {
 
 // Export to CSV function
 function exportToCSV(leads) {
-    // Create an array of key-value pairs as strings with headers "Title,URL"
     const csvRows = [
-        "Title,URL", // Add the header row
+        "Title,URL",
         ...Object.entries(leads).map(([key, value]) => `${key},${value}`)
     ];
-    
-    // Join the rows with newline characters
     const csvContent = "data:text/csv;charset=utf-8," + csvRows.join("\n");
-    
-    // Encode the CSV content
     const encodedUri = encodeURI(csvContent);
-    
-    // Create a temporary link element for downloading the CSV
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
     link.setAttribute("download", "leads.csv");
-    
-    // Append the link to the body, trigger a click, and remove the link
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
