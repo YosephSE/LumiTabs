@@ -48,7 +48,7 @@ exportBtn.addEventListener("click", function() {
 // Render function
 function render(leads = myLeads) {
     let listItems = "";
-    Object.keys(leads).forEach(key => {
+    Object.keys(leads).reverse().forEach(key => {
         listItems += `
             <li class="flex justify-between py-2 my-1">
                 <a class="w-4/5 hover:text-green-500" target='_blank' href='${key}'>
