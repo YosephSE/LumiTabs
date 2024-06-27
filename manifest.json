@@ -7,6 +7,10 @@
         "default_icon": "build/assets/img/icon.png"
     },
     "permissions": [
-        "tabs"
+        "tabs",
+        "file:///*"
+    ],
+    "host_permissions": [
+    "file:///*"
     ]
 }
