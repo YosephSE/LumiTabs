@@ -50,12 +50,14 @@ function render(leads = myLeads) {
     let listItems = "";
     Object.keys(leads).reverse().forEach(key => {
         listItems += `
-            <li class="flex justify-between py-2 my-1">
-                <a class="w-4/5 hover:text-green-500" target='_blank' href='${key}'>
-                    ${leads[key]}
-                </a>
-                <img src="assets/img/D.png" class='delete-btn hover:scale-125' index='${key}'></li>
-        `;
+    <li class="d-flex justify-content-between py-2 my-1">
+        <a class="flex-grow-1 text-truncate text-dark" target='_blank' href='${key}'>
+            ${leads[key]}
+        </a>
+        <img src="assets/img/D.png" class='delete-btn ml-2' style='cursor:pointer;' index='${key}'>
+    </li>
+`;
+
     });
 
     // Insert list items

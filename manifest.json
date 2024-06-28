@@ -3,13 +3,13 @@
     "version": "2.0",
     "name": "LumiTabs",
     "action": {
-        "default_popup": "build/index.html",
-        "default_icon": "build/assets/img/icon.png"
+        "default_popup": "index.html",
+        "default_icon": "assets/img/icon.png"
     },
     "permissions": [
         "tabs"
     ],
-    "host_permissions":[
-        "file:///*"
+    "host_permissions": [
+    "file:///*"
     ]
 }
