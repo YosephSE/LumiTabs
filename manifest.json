@@ -8,5 +8,8 @@
     },
     "permissions": [
         "tabs"
+    ],
+    "host_permissions":[
+        "file:///*"
     ]
 }
