@@ -1,0 +1,193 @@
+/* Custom CSS extracted from Tailwind classes used */
+
+/* Background colors */
+.bg-gray-100 {
+  background-color: #f3f4f6;
+}
+
+.bg-white {
+  background-color: #ffffff;
+}
+
+.bg-green-500 {
+  background-color: #22c55e;
+}
+
+.bg-gray-500 {
+  background-color: #6b7280;
+}
+
+.hover\:bg-gray-100:hover {
+  background-color: #f3f4f6;
+}
+
+/* Text colors */
+.text-white {
+  color: #ffffff;
+}
+
+.text-black {
+  color: #000000;
+}
+
+.text-gray-700 {
+  color: #374151;
+}
+
+.hover\:text-green-500:hover {
+  color: #22c55e;
+}
+
+/* Font size */
+.text-sm {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+/* Padding */
+.p-2 {
+  padding: 0.5rem;
+}
+
+.px-3 {
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+}
+
+.py-2 {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+/* Margin */
+.m-1 {
+  margin: 0.25rem;
+}
+
+.mt-2 {
+  margin-top: 0.5rem;
+}
+
+.ml-2 {
+  margin-left: 0.5rem;
+}
+
+/* Width */
+.w-full {
+  width: 100%;
+}
+
+.w-40 {
+  width: 10rem;
+}
+
+.w-5 {
+  width: 1.25rem;
+}
+
+.hover\:w-4:hover {
+  width: 1rem;
+}
+
+/* Height */
+.h-5 {
+  height: 1.25rem;
+}
+
+.hover\:h-4:hover {
+  height: 1rem;
+}
+
+/* Layout and Display */
+.container {
+  width: 100%;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.mx-auto {
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.inline-block {
+  display: inline-block;
+}
+
+.block {
+  display: block;
+}
+
+.flex {
+  display: flex;
+}
+
+.flex-grow {
+  flex-grow: 1;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.relative {
+  position: relative;
+}
+
+.absolute {
+  position: absolute;
+}
+
+.hidden {
+  display: none;
+}
+
+/* Spacing */
+.space-x-2 > :not([hidden]) ~ :not([hidden]) {
+  margin-right: 0.5rem;
+  margin-left: 0.5rem;
+}
+
+/* Border radius */
+.rounded {
+  border-radius: 0.25rem;
+}
+
+.rounded-lg {
+  border-radius: 0.5rem;
+}
+
+/* Box Shadow */
+.shadow-sm {
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+/* Cursor and Interaction */
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.break-words {
+  word-wrap: break-word;
+}
+
+/* Other styles */
+.origin-top-right {
+  transform-origin: top right;
+}
+
+.text-left {
+  text-align: left;
+}
+
+.ring-1 {
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+.ring-black {
+  border-color: rgba(0, 0, 0, 1);
+}
+
+.ring-opacity-5 {
+  border-opacity: 0.05;
+}
