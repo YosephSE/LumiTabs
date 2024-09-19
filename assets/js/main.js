@@ -54,7 +54,7 @@ function render(leads = myLeads) {
                 <a class="flex-grow text-black hover:underline break-words" target='_blank' href='${key}'>
                     ${leads[key]}
                 </a>
-                <img src="assets/img/D.png" class='delete-btn ml-2 cursor-pointer w-5 h-5' index='${key}'>
+                <img src="assets/img/D.png" class='delete-btn ml-2 cursor-pointer w-5 h-5 hover:w-4 hover:h-4' index='${key}'>
             </li>
         `;
     });

@@ -1,15 +1,11 @@
 {
-    "manifest_version": 3,
-    "version": "2.0",
-    "name": "LumiTabs",
-    "action": {
-        "default_popup": "index.html",
-        "default_icon": "assets/img/icon.png"
-    },
-    "permissions": [
-        "tabs"
-    ],
-    "host_permissions": [
-    "file:///*"
-    ]
+  "manifest_version": 3,
+  "version": "2.0",
+  "name": "LumiTabs",
+  "action": {
+    "default_popup": "index.html",
+    "default_icon": "assets/img/icon.png"
+  },
+  "permissions": ["tabs"],
+  "host_permissions": ["file:///*"]
 }
