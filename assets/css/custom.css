@@ -8,6 +8,5 @@
 }
 body{
     font-family: Poppins, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    min-width: 400px;
-    max-width: 500px;
+    width: 500px;
 }
