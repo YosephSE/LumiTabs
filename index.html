@@ -1,22 +1,20 @@
 <html>
   <head>
-    <link rel="stylesheet" href="assets/css/style.css" />
-    <link rel="stylesheet" href="assets/css/custom.css">
     <title>LumiTabs</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   </head>
-  <body class="bg-light p-2">
-
-    <div class="container bg-white p-2 rounded-lg shadow-sm">
-      <div class="d-flex p-4 justify-content-center">
-        <button class="btn btn-success text-white btn-sm py-2 px-3 m-1" id="tab-btn">SAVE TAB</button>
-        <button class="btn btn-success text-white btn-sm py-2 px-3 m-1" id="alltab-btn">SAVE ALL TABS</button>
-        <button class="btn btn-danger text-white btn-sm py-2 px-3 m-1" id="delete-btn">DELETE ALL</button>
-        <button class="btn btn-success text-white btn-sm py-2 px-3 m-1" id="export-btn">EXPORT</button>
+  <body class="bg-gray-100 p-2">
+    <div class="container mx-auto bg-white p-2 rounded-lg shadow-sm">
+      <div class="flex p-4 justify-center">
+        <button class="btn bg-green-500 text-white text-sm py-2 px-3 m-1 rounded" id="tab-btn">SAVE TAB</button>
+        <button class="btn bg-green-500 text-white text-sm py-2 px-3 m-1 rounded" id="alltab-btn">SAVE ALL TABS</button>
+        <button class="btn bg-red-500 text-white text-sm py-2 px-3 m-1 rounded" id="delete-btn">DELETE ALL</button>
+        <button class="btn bg-green-500 text-white text-sm py-2 px-3 m-1 rounded" id="export-btn">EXPORT</button>
       </div>
   
-      <ol id="ol-el" class="mt-2 bg-light p-2 rounded shadow-sm text-sm"></ol>
+      <ol id="ol-el" class="mt-2 bg-gray-100 p-2 rounded shadow-sm text-sm"></ol>
     </div>
-    </div>
+
     <script src="assets/js/main.js"></script>
   </body>
 </html>
