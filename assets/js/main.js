@@ -1,63 +1,62 @@
 // DOM Variables
-let myLeads = {}
-const olEl = document.getElementById("ol-el")
-const deleteBtn = document.getElementById("delete-btn")
-const leadsFromLocalStorage = JSON.parse( localStorage.getItem("myLeads"))
-const tabBtn = document.getElementById("tab-btn")
-const alltabBtn = document.getElementById("alltab-btn")
-const exportBtn = document.getElementById("export-btn")
+let myLeads = {};
+const olEl = document.getElementById("ol-el");
+const deleteBtn = document.getElementById("delete-btn");
+const leadsFromLocalStorage = JSON.parse(localStorage.getItem("myLeads"));
+const tabBtn = document.getElementById("tab-btn");
+const alltabBtn = document.getElementById("alltab-btn");
+const exportBtn = document.getElementById("export-btn");
 
-// Load from localstorage
+// Load from local storage
 if (leadsFromLocalStorage) {
-    myLeads = leadsFromLocalStorage
-    render()
+    myLeads = leadsFromLocalStorage;
+    render();
 }
 
 // Tab button event
-tabBtn.addEventListener("click", function(){    
-    chrome.tabs.query({active: true, currentWindow: true}, function(tabs){
-        myLeads[tabs[0].url] = tabs[0].title
-        localStorage.setItem("myLeads", JSON.stringify(myLeads) )
-        render()
-    })
-})
+tabBtn.addEventListener("click", function() {    
+    chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+        myLeads[tabs[0].url] = tabs[0].title;
+        localStorage.setItem("myLeads", JSON.stringify(myLeads));
+        render();
+    });
+});
 
 // All tabs button event
-alltabBtn.addEventListener("click", function(){    
-    chrome.tabs.query({currentWindow: true}, function(tabs){
+alltabBtn.addEventListener("click", function() {    
+    chrome.tabs.query({ currentWindow: true }, function(tabs) {
         for (let tab of tabs) {
-            myLeads[tab.url] = tab.title
+            myLeads[tab.url] = tab.title;
         }
         localStorage.setItem("myLeads", JSON.stringify(myLeads));
         render();
     });
-})
+});
 
 // Delete all button event
 deleteBtn.addEventListener("click", function() {
-    localStorage.clear()
-    myLeads = {}
-    render()
-})
+    localStorage.clear();
+    myLeads = {};
+    render();
+});
 
 // Export button event
 exportBtn.addEventListener("click", function() {
     exportToCSV(myLeads);
-})
+});
 
 // Render function
 function render(leads = myLeads) {
     let listItems = "";
     Object.keys(leads).reverse().forEach(key => {
         listItems += `
-    <li class="d-flex justify-content-between py-2 my-1">
-        <a class="flex-grow-1 text-truncate text-dark" target='_blank' href='${key}'>
-            ${leads[key]}
-        </a>
-        <img src="assets/img/D.png" class='delete-btn ml-2' style='cursor:pointer;' index='${key}'>
-    </li>
-`;
-
+            <li class="flex justify-between items-center py-2 my-1 bg-white p-2 rounded shadow-sm">
+                <a class="flex-grow text-black hover:underline break-words" target='_blank' href='${key}'>
+                    ${leads[key]}
+                </a>
+                <img src="assets/img/D.png" class='delete-btn ml-2 cursor-pointer w-5 h-5' index='${key}'>
+            </li>
+        `;
     });
 
     // Insert list items
@@ -72,7 +71,6 @@ function render(leads = myLeads) {
         });
     });
 }
-
 
 // Export to CSV function
 function exportToCSV(leads) {
@@ -90,11 +88,9 @@ function exportToCSV(leads) {
     document.body.removeChild(link);
 }
 
-
-
 // Delete function
-function deleteI(key){
-    delete myLeads[key]
+function deleteI(key) {
+    delete myLeads[key];
     localStorage.setItem("myLeads", JSON.stringify(myLeads));
-    render()
+    render();
 }
