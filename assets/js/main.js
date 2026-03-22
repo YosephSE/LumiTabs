@@ -37,7 +37,7 @@ alltabBtn.addEventListener("click", function () {
 
 // Delete all button event
 deleteBtn.addEventListener("click", function () {
-  localStorage.clear();
+  localStorage.removeItem("myLeads");
   myLeads = {};
   render();
 });
@@ -109,7 +109,9 @@ function render(leads = myLeads) {
 function exportToCSV(leads) {
   const csvRows = [
     "URL,Title",
-    ...Object.entries(leads).map(([key, value]) => `${key},${value}`),
+    ...Object.entries(leads).map(
+      ([key, value]) => `${quoteCSV(key)},${quoteCSV(value)}`
+    ),
   ];
   const csvContent = "data:text/csv;charset=utf-8," + csvRows.join("\n");
   const encodedUri = encodeURI(csvContent);
@@ -123,21 +125,68 @@ function exportToCSV(leads) {
 
 // Import from CSV function
 function importFromCSV(csvContent) {
-  const lines = csvContent.split("\n");
+  const rows = parseCSV(csvContent);
 
-  // Skip the header and parse each line
-  for (let i = 1; i < lines.length; i++) {
-    const [url, title] = lines[i].split(",");
+  for (let i = 1; i < rows.length; i++) {
+    const [url, title] = rows[i];
+    const cleanUrl = url?.trim();
+    const cleanTitle = title?.trim();
 
-    // Ignore empty lines
-    if (url && title) {
-      myLeads[url] = title;
+    if (cleanUrl && cleanTitle) {
+      myLeads[cleanUrl] = cleanTitle;
     }
   }
 
-  // Save to local storage and render
   localStorage.setItem("myLeads", JSON.stringify(myLeads));
   render();
+}
+
+function quoteCSV(value = "") {
+  const safeValue = String(value);
+  return `"${safeValue.replace(/"/g, '""')}"`;
+}
+
+function parseCSV(csvContent) {
+  const rows = [];
+  let currentRow = [];
+  let currentField = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < csvContent.length; i++) {
+    const char = csvContent[i];
+
+    if (char === '"') {
+      if (inQuotes && csvContent[i + 1] === '"') {
+        currentField += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (char === "," && !inQuotes) {
+      currentRow.push(currentField);
+      currentField = "";
+    } else if ((char === "\n" || char === "\r") && !inQuotes) {
+      if (currentField || currentRow.length) {
+        currentRow.push(currentField);
+        rows.push(currentRow);
+        currentRow = [];
+        currentField = "";
+      }
+
+      if (char === "\r" && csvContent[i + 1] === "\n") {
+        i++;
+      }
+    } else {
+      currentField += char;
+    }
+  }
+
+  if (currentField || currentRow.length) {
+    currentRow.push(currentField);
+    rows.push(currentRow);
+  }
+
+  return rows;
 }
 
 // Delete function
