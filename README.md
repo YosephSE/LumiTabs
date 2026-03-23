@@ -1,78 +1,27 @@
-# LumiTabs - Chrome Extension
+﻿# LumiPanel - Chrome Side Panel Extension
 
-Welcome to **LumiTabs**! This extension is designed to help you manage and save your browser tabs, enhancing your productivity by keeping track of important links and sessions.
+A side-panel bookmark manager with themes, fonts, shortcuts, and metadata previews. Built with React + Vite + TypeScript.
 
 ## Features
-
-### Save Tabs
-- **Save Current Tab**: Save the URL of your current active tab with a single click. 
-- **Save All Tabs**: Capture all the URLs from your open tabs in the current window.
-
-### Manage Tabs
-- **Delete All Saved Links**: Clear all saved links from the local storage with one click.
-- **Delete Individual Links**: Easily remove specific links from your saved list.
-
-### Export
-- **Export Links to CSV**: Export your saved links into a CSV file for easy sharing and backup.
-
-## Installation
-
-### From Source
-
-1. Download the LumiTabs extension files.
-2. Open Chrome and navigate to `chrome://extensions/`.
-3. Enable "Developer mode" in the top right corner.
-4. Click "Load unpacked" and select the LumiTabs directory.
-
-### From Packed Version
-
-1. Download the `LumiTabs.crx` file.
-2. Open Chrome and navigate to `chrome://extensions/`.
-3. Enable "Developer mode" in the top right corner.
-4. Drag and drop the `LumiTabs.crx` file onto the Chrome extensions page to install.
-
-## Usage
-
-1. Click on the LumiTabs icon in the Chrome toolbar to open the popup.
-2. Use the input field to manually add a URL and click "SAVE INPUT".
-3. Click "SAVE TAB" to save the URL of your current active tab.
-4. Click "SAVE ALL TABS" to save URLs of all open tabs in the current window.
-5. To delete all saved links, click "DELETE ALL".
-6. To export your saved links as a CSV file, click "EXPORT".
-
-## Screenshot
-
-![image](https://github.com/YosephSE/LumiTabs/assets/88291669/09bde6ed-b3c2-444a-815e-87574fe96662)
-
-
+- Save current or all open tabs, with duplicate protection.
+- Keyboard shortcuts (toggle panel, save page) with fallback handling and user overrides.
+- Theming: system default plus NoteBar-inspired Light/Dark/Ocean palettes.
+- Fonts: choose between Manrope, Source Sans 3, and Work Sans.
+- Metadata previews (favicon, title, URL) and quick open/delete.
+- Settings persisted in chrome.storage.local; legacy localStorage data is migrated automatically.
 
 ## Development
+`ash
+npm install
+npm run dev   # serves the panel at http://localhost:5173
+npm run build # outputs dist/ with manifest for loading unpacked
+`
 
-### Prerequisites
-- Chrome browser
-- Basic knowledge of JavaScript, HTML, and CSS
+Load the unpacked extension from dist/ after 
+pm run build (or from the repo root for quick dev with manifest.json).
 
-### File Structure
-- **manifest.json**: Configuration file for the Chrome extension.
-- **index.html**: The popup interface of the extension.
-- **main.js**: JavaScript file containing the logics.
-- **assets/**: Directory containing CSS and image files.
+## Shortcuts
+- Toggle panel: Alt+Shift+L (fallbacks: Alt+Shift+K, Alt+Shift+U)
+- Save current tab: Alt+Shift+S (fallbacks: Alt+Shift+D, Alt+Shift+P)
 
-
-## Contributing
-
-Contributions are welcome! Please fork the repository and submit a pull request with your improvements.
-
-## License
-
-This project is licensed under the MIT License.
-
----
-
-Feel free to reach out if you have any questions or need further assistance. Enjoy using LumiTabs to keep your browsing sessions organized and productive!
-
----
-
-**LumiTabs** - Simplifying your browsing experience.
-
-
+Adjust shortcuts in Settings; we attempt the new combo and show a toast if unavailable.
