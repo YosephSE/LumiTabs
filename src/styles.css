@@ -1,4 +1,4 @@
-﻿:root {
+:root {
   --bg: #f7f7f8;
   --card: #ffffff;
   --text: #14161a;
@@ -175,6 +175,14 @@ h1, h2 {
   min-width: 200px;
 }
 
+.input-error {
+  border-color: #d14343;
+}
+
+.input-hint-error {
+  color: #d14343;
+}
+
 .btn, .ghost {
   border-radius: 12px;
   padding: 10px 12px;
@@ -205,6 +213,24 @@ h1, h2 {
   border-color: #d14343;
 }
 
+.icon-button {
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-button svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
 .card {
   background: var(--card);
   border: 1px solid var(--border);
@@ -308,6 +334,14 @@ h1, h2 {
   display: flex;
   gap: 8px;
   align-items: center;
+  flex-wrap: wrap;
+}
+
+.shortcut-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 .transfer-row {
@@ -357,3 +391,4 @@ h1, h2 {
 [data-font='work-sans'] {
   font-family: 'Work Sans', system-ui, sans-serif;
 }
+

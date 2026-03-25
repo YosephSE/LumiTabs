@@ -16,15 +16,9 @@
     "default_path": "dist/index.html"
   },
   "commands": {
-    "toggle_panel": {
-      "suggested_key": {
-        "default": "Alt+Shift+L"
-      },
-      "description": "Toggle LumiPanel"
-    },
     "save_current": {
       "suggested_key": {
-        "default": "Alt+Shift+S"
+        "default": "Ctrl+Shift+U"
       },
       "description": "Save current tab to LumiPanel"
     }

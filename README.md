@@ -1,27 +1,27 @@
-﻿# LumiPanel - Chrome Side Panel Extension
+# LumiPanel - Chrome Side Panel Extension
 
-A side-panel bookmark manager with themes, fonts, shortcuts, and metadata previews. Built with React + Vite + TypeScript.
+A side-panel bookmark manager with themes, fonts, shortcuts, and metadata previews.
+Built with React + Vite + TypeScript.
 
 ## Features
 - Save current or all open tabs, with duplicate protection.
-- Keyboard shortcuts (toggle panel, save page) with fallback handling and user overrides.
+- Keyboard shortcuts for toggling the panel and saving the current page.
 - Theming: system default plus NoteBar-inspired Light/Dark/Ocean palettes.
-- Fonts: choose between Manrope, Source Sans 3, and Work Sans.
+- Fonts: Manrope, Source Sans 3, and Work Sans.
 - Metadata previews (favicon, title, URL) and quick open/delete.
-- Settings persisted in chrome.storage.local; legacy localStorage data is migrated automatically.
+- Settings persisted in `chrome.storage.local`; legacy `localStorage` data is migrated automatically.
 
 ## Development
-`ash
+```bash
 npm install
 npm run dev   # serves the panel at http://localhost:5173
 npm run build # outputs dist/ with manifest for loading unpacked
-`
+```
 
-Load the unpacked extension from dist/ after 
-pm run build (or from the repo root for quick dev with manifest.json).
+Load the unpacked extension from `dist/` after `npm run build`
+(or from the repo root for quick dev with `manifest.json`).
 
 ## Shortcuts
-- Toggle panel: Alt+Shift+L (fallbacks: Alt+Shift+K, Alt+Shift+U)
-- Save current tab: Alt+Shift+S (fallbacks: Alt+Shift+D, Alt+Shift+P)
+- Save current tab: `Ctrl+Shift+U`
 
-Adjust shortcuts in Settings; we attempt the new combo and show a toast if unavailable.
+Shortcuts are managed in Chrome at `chrome://extensions/shortcuts`.

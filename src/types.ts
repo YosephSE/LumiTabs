@@ -18,6 +18,4 @@ export type FontId = 'manrope' | 'source-sans' | 'work-sans';
 export type Settings = {
   theme: ThemeId;
   font: FontId;
-  toggleShortcut: string;
-  saveShortcut: string;
 };

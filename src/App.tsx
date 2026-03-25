@@ -1,8 +1,9 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { LinkList } from './components/LinkList';
 import { SettingsPanel } from './components/SettingsPanel';
 import { useStorage } from './hooks/useStorage';
 import { LinkGroup, SavedLink, ThemeId } from './types';
+import { normalizeUrl } from './utils/url';
 
 function LinksIcon() {
   return (
@@ -43,6 +44,12 @@ type TransferFormat = 'csv' | 'json';
 
 const GROUP_FILTER_ALL = '__all__';
 const GROUP_FILTER_UNGROUPED = '__ungrouped__';
+const COMMAND_SAVE_CURRENT = 'save_current';
+
+type ShortcutStatus = {
+  saveCurrent: string;
+  isMissing: boolean;
+};
 
 type ImportedLinkRecord = {
   url: string;
@@ -63,29 +70,6 @@ function computeTheme(theme: ThemeId) {
   }
 
   return theme;
-}
-
-function normalizeUrl(value: string) {
-  const input = value.trim();
-  if (!input) return null;
-
-  const toHttpUrl = (candidate: string) => {
-    const parsed = new URL(candidate);
-    if (!['http:', 'https:'].includes(parsed.protocol)) {
-      return null;
-    }
-    return parsed.toString();
-  };
-
-  try {
-    return toHttpUrl(input);
-  } catch (_err) {
-    try {
-      return toHttpUrl(`https://${input}`);
-    } catch (_err2) {
-      return null;
-    }
-  }
 }
 
 function normalizeGroupName(name: string) {
@@ -323,6 +307,10 @@ export default function App() {
   const [nav, setNav] = useState<NavId>('links');
   const [activeGroup, setActiveGroup] = useState<string>(GROUP_FILTER_ALL);
   const [toasts, setToasts] = useState<string[]>([]);
+  const [shortcutStatus, setShortcutStatus] = useState<ShortcutStatus>({
+    saveCurrent: 'Not set',
+    isMissing: true
+  });
 
   const pushToast = useMemo(
     () => (msg: string) => {
@@ -333,6 +321,34 @@ export default function App() {
     },
     []
   );
+
+  const loadShortcutStatus = useCallback(async () => {
+    try {
+      const commands = await new Promise<chrome.commands.Command[]>((resolve) => {
+        chrome.commands.getAll((entries) => {
+          resolve(entries || []);
+        });
+      });
+
+      const findShortcut = (name: string) => {
+        const command = commands.find((entry) => entry.name === name);
+        return command?.shortcut || '';
+      };
+
+      const saveShortcut = findShortcut(COMMAND_SAVE_CURRENT);
+
+      setShortcutStatus({
+        saveCurrent: saveShortcut || 'Not set',
+        isMissing: !saveShortcut
+      });
+    } catch (err) {
+      console.warn('Failed to load shortcuts', err);
+      setShortcutStatus({
+        saveCurrent: 'Unavailable',
+        isMissing: true
+      });
+    }
+  }, []);
 
   const resolveTargetGroupId = () => {
     if (activeGroup === GROUP_FILTER_ALL || activeGroup === GROUP_FILTER_UNGROUPED) {
@@ -351,16 +367,62 @@ export default function App() {
   };
 
   useEffect(() => {
-    const handler = (message: unknown) => {
-      const payload = message as { type?: string; url?: string; title?: string };
-      if (payload?.type === 'save_current' && payload.url) {
-        void handleSaveUrl(payload.url, payload.title || payload.url);
+    const handler = (
+      message: unknown,
+      _sender: chrome.runtime.MessageSender,
+      sendResponse: (response?: unknown) => void
+    ) => {
+      const payload = message as { type?: string; status?: string };
+      if (payload?.type !== 'shortcut_save_result') {
+        return;
       }
+
+      if (payload.status === 'saved') {
+        pushToast('Saved link');
+      } else if (payload.status === 'duplicate') {
+        pushToast('Already exists');
+      } else if (payload.status === 'unavailable') {
+        pushToast('Cannot save this page');
+      } else {
+        pushToast('Failed to save link');
+      }
+
+      sendResponse({ handled: true });
     };
 
     chrome.runtime.onMessage.addListener(handler);
     return () => chrome.runtime.onMessage.removeListener(handler);
-  }, [addLink, pushToast]);
+  }, [pushToast]);
+
+  useEffect(() => {
+    void loadShortcutStatus();
+  }, [loadShortcutStatus]);
+
+  useEffect(() => {
+    if (nav === 'settings') {
+      void loadShortcutStatus();
+    }
+  }, [nav, loadShortcutStatus]);
+
+  useEffect(() => {
+    const refreshOnFocus = () => {
+      void loadShortcutStatus();
+    };
+
+    const refreshOnVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        void loadShortcutStatus();
+      }
+    };
+
+    window.addEventListener('focus', refreshOnFocus);
+    document.addEventListener('visibilitychange', refreshOnVisibility);
+
+    return () => {
+      window.removeEventListener('focus', refreshOnFocus);
+      document.removeEventListener('visibilitychange', refreshOnVisibility);
+    };
+  }, [loadShortcutStatus]);
 
   useEffect(() => {
     if (activeGroup === GROUP_FILTER_ALL || activeGroup === GROUP_FILTER_UNGROUPED) {
@@ -556,20 +618,19 @@ export default function App() {
     }
   };
 
-  const handleShortcutUpdate = async (kind: 'toggle' | 'save', value: string) => {
-    if (!value.trim()) return;
+  const handleOpenShortcutSettings = () => {
+    chrome.tabs.create({ url: 'chrome://extensions/shortcuts' }, () => {
+      if (!chrome.runtime.lastError) {
+        return;
+      }
 
-    try {
-      await chrome.commands.update({
-        name: kind === 'toggle' ? 'toggle_panel' : 'save_current',
-        shortcut: value
-      });
+      console.warn('Failed to open shortcut settings', chrome.runtime.lastError);
+      pushToast('Open chrome://extensions/shortcuts manually');
+    });
+  };
 
-      await saveSettings(kind === 'toggle' ? { toggleShortcut: value } : { saveShortcut: value });
-      pushToast('Shortcut updated');
-    } catch (_err) {
-      pushToast('Shortcut unavailable, keeping previous');
-    }
+  const handleRefreshShortcuts = async () => {
+    await loadShortcutStatus();
   };
 
   return (
@@ -605,10 +666,12 @@ export default function App() {
         ) : (
           <SettingsPanel
             settings={settings}
+            shortcuts={shortcutStatus}
             groups={groups}
             linksCount={links.length}
             onUpdate={saveSettings}
-            onShortcutRequest={handleShortcutUpdate}
+            onOpenShortcutSettings={handleOpenShortcutSettings}
+            onRefreshShortcuts={handleRefreshShortcuts}
             onExportRequest={handleExport}
             onImportRequest={handleImport}
             onCreateGroup={handleCreateGroup}

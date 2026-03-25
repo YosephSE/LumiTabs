@@ -3,9 +3,7 @@ import { LinkGroup, SavedLink, Settings } from '../types';
 
 const DEFAULT_SETTINGS: Settings = {
   theme: 'system',
-  font: 'manrope',
-  toggleShortcut: 'Alt+Shift+L',
-  saveShortcut: 'Alt+Shift+S'
+  font: 'manrope'
 };
 
 const STORAGE_KEYS = {
@@ -84,15 +82,17 @@ export function useStorage() {
   };
 
   const addLink = useCallback(async (link: SavedLink) => {
-    let didAdd = false;
-    setLinks((prev) => {
-      if (prev.find((l) => l.url === link.url)) return prev;
-      didAdd = true;
-      const next = [link, ...prev];
-      chrome.storage.local.set({ [STORAGE_KEYS.savedLinks]: next });
-      return next;
-    });
-    return didAdd;
+    const result = await chrome.storage.local.get([STORAGE_KEYS.savedLinks]);
+    const storedLinks: SavedLink[] = result[STORAGE_KEYS.savedLinks] || [];
+
+    if (storedLinks.some((savedLink) => savedLink.url === link.url)) {
+      return false;
+    }
+
+    const next = [link, ...storedLinks];
+    await chrome.storage.local.set({ [STORAGE_KEYS.savedLinks]: next });
+    setLinks(next);
+    return true;
   }, []);
 
   const removeLink = useCallback(async (url: string) => {

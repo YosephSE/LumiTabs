@@ -1,4 +1,4 @@
-import React, { ChangeEvent, useEffect, useRef, useState } from 'react';
+import React, { ChangeEvent, useRef, useState } from 'react';
 import { FontId, LinkGroup, Settings, ThemeId } from '../types';
 
 const FONT_OPTIONS: { id: FontId; label: string }[] = [
@@ -14,12 +14,19 @@ const THEME_OPTIONS: { id: ThemeId; label: string }[] = [
   { id: 'notebar-ocean', label: 'NoteBar Ocean' }
 ];
 
+type ShortcutStatus = {
+  saveCurrent: string;
+  isMissing: boolean;
+};
+
 type Props = {
   settings: Settings;
+  shortcuts: ShortcutStatus;
   groups: LinkGroup[];
   linksCount: number;
   onUpdate: (patch: Partial<Settings>) => void;
-  onShortcutRequest: (kind: 'toggle' | 'save', value: string) => void;
+  onOpenShortcutSettings: () => void;
+  onRefreshShortcuts: () => Promise<void> | void;
   onExportRequest: (format: 'csv' | 'json') => void;
   onImportRequest: (format: 'csv' | 'json', file: File) => Promise<void>;
   onCreateGroup: (name: string) => Promise<boolean>;
@@ -29,18 +36,18 @@ type Props = {
 
 export function SettingsPanel({
   settings,
+  shortcuts,
   groups,
   linksCount,
   onUpdate,
-  onShortcutRequest,
+  onOpenShortcutSettings,
+  onRefreshShortcuts,
   onExportRequest,
   onImportRequest,
   onCreateGroup,
   onDeleteGroup,
   onClearAll
 }: Props) {
-  const [toggleKey, setToggleKey] = useState(settings.toggleShortcut);
-  const [saveKey, setSaveKey] = useState(settings.saveShortcut);
   const [isImporting, setIsImporting] = useState(false);
   const [newGroup, setNewGroup] = useState('');
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);
@@ -48,11 +55,6 @@ export function SettingsPanel({
   const [isClearingAll, setIsClearingAll] = useState(false);
   const csvInputRef = useRef<HTMLInputElement>(null);
   const jsonInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    setToggleKey(settings.toggleShortcut);
-    setSaveKey(settings.saveShortcut);
-  }, [settings.toggleShortcut, settings.saveShortcut]);
 
   const handleImport = async (format: 'csv' | 'json', event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -142,24 +144,26 @@ export function SettingsPanel({
         <label>Shortcuts</label>
 
         <div className="shortcut-row">
-          <input
-            className="input"
-            value={toggleKey}
-            onChange={(e) => setToggleKey(e.target.value)}
-            onBlur={() => onShortcutRequest('toggle', toggleKey)}
-          />
-          <span className="hint">Toggle panel</span>
+          <input className="input" value={shortcuts.saveCurrent} readOnly aria-label="Save current page shortcut" />
+          <span className="hint">Save current tab</span>
         </div>
 
-        <div className="shortcut-row">
-          <input
-            className="input"
-            value={saveKey}
-            onChange={(e) => setSaveKey(e.target.value)}
-            onBlur={() => onShortcutRequest('save', saveKey)}
-          />
-          <span className="hint">Save current page</span>
+        <div className="shortcut-actions">
+          <button className="ghost" onClick={onOpenShortcutSettings}>
+            Manage in Chrome
+          </button>
+          <button className="ghost" onClick={() => void onRefreshShortcuts()}>
+            Refresh
+          </button>
         </div>
+
+        {shortcuts.isMissing ? (
+          <span className="hint input-hint-error">
+            Shortcut is not set. Assign it in chrome://extensions/shortcuts.
+          </span>
+        ) : (
+          <span className="hint">Shortcut values are managed in chrome://extensions/shortcuts.</span>
+        )}
       </div>
 
       <div className="setting">

@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { LinkGroup, SavedLink } from '../types';
+import { normalizeUrl } from '../utils/url';
 import { LinkCard } from './LinkCard';
 
 type Props = {
@@ -29,7 +30,11 @@ export function LinkList({
 }: Props) {
   const [query, setQuery] = useState('');
   const [newLink, setNewLink] = useState('');
+  const [newLinkError, setNewLinkError] = useState('');
   const [isAdding, setIsAdding] = useState(false);
+
+  const hasDraft = newLink.trim().length > 0;
+  const isDraftValid = !hasDraft || Boolean(normalizeUrl(newLink));
 
   const filtered = useMemo(() => {
     const q = query.toLowerCase();
@@ -51,23 +56,61 @@ export function LinkList({
   const handleAdd = async () => {
     if (!newLink.trim() || isAdding) return;
 
+    const normalizedUrl = normalizeUrl(newLink);
+    if (!normalizedUrl) {
+      setNewLinkError('Enter a valid URL (http or https).');
+      return;
+    }
+
     setIsAdding(true);
-    const didAccept = await onAdd(newLink);
+    const didAccept = await onAdd(normalizedUrl);
     setIsAdding(false);
 
     if (didAccept) {
       setNewLink('');
+      setNewLinkError('');
     }
+  };
+
+  const handleNewLinkChange = (value: string) => {
+    setNewLink(value);
+
+    if (!value.trim()) {
+      setNewLinkError('');
+      return;
+    }
+
+    if (normalizeUrl(value)) {
+      setNewLinkError('');
+      return;
+    }
+
+    setNewLinkError('Enter a valid URL (http or https).');
   };
 
   return (
     <div className="section">
       <div className="add-link-row">
         <input
-          className="input add-link-input"
+          className={`input add-link-input ${newLinkError ? 'input-error' : ''}`}
           placeholder="Paste a link and press Enter"
           value={newLink}
-          onChange={(e) => setNewLink(e.target.value)}
+          onChange={(e) => handleNewLinkChange(e.target.value)}
+          aria-invalid={newLinkError ? 'true' : 'false'}
+          onPaste={(e) => {
+            const pasted = e.clipboardData.getData('text');
+            if (!pasted.trim()) {
+              setNewLinkError('');
+              return;
+            }
+
+            if (!normalizeUrl(pasted)) {
+              setNewLinkError('Enter a valid URL (http or https).');
+              return;
+            }
+
+            setNewLinkError('');
+          }}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
               e.preventDefault();
@@ -75,10 +118,11 @@ export function LinkList({
             }
           }}
         />
-        <button className="btn" onClick={() => void handleAdd()} disabled={!newLink.trim() || isAdding}>
+        <button className="btn" onClick={() => void handleAdd()} disabled={!hasDraft || !isDraftValid || isAdding}>
           {isAdding ? 'Adding...' : 'Add Link'}
         </button>
       </div>
+      {newLinkError ? <div className="hint input-hint-error">{newLinkError}</div> : null}
 
       <div className="group-toolbar">
         <div className="group-filters">

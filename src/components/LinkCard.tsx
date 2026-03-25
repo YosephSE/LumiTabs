@@ -43,11 +43,31 @@ export function LinkCard({ link, groups, onOpen, onDelete, onMove }: LinkCardPro
             </option>
           ))}
         </select>
-        <button className="ghost" onClick={() => onOpen(link.url)}>
-          Open
+        <button
+          className="ghost icon-button"
+          onClick={() => onOpen(link.url)}
+          aria-label="Open link"
+          title="Open link"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M14 5h5v5" />
+            <path d="M10 14 19 5" />
+            <path d="M19 13v4a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h4" />
+          </svg>
         </button>
-        <button className="ghost danger" onClick={() => onDelete(link.url)}>
-          Delete
+        <button
+          className="ghost danger icon-button"
+          onClick={() => onDelete(link.url)}
+          aria-label="Delete link"
+          title="Delete link"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 7h16" />
+            <path d="M10 11v6" />
+            <path d="M14 11v6" />
+            <path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12" />
+            <path d="M9 4h6l1 3H8l1-3Z" />
+          </svg>
         </button>
       </div>
     </div>

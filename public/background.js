@@ -1,76 +1,151 @@
-// Background service worker for LumiPanel (MV3)
-const DEFAULT_SHORTCUTS = {
-  toggle: ['Alt+Shift+L', 'Alt+Shift+K', 'Alt+Shift+U'],
-  save: ['Alt+Shift+S', 'Alt+Shift+D', 'Alt+Shift+P']
+const STORAGE_KEYS = {
+  savedLinks: 'savedLinks'
 };
 
-async function ensureSidePanel(windowId) {
-  try {
-    await chrome.sidePanel.open({ windowId });
-  } catch (err) {
-    console.warn('Side panel open failed', err);
-  }
-}
+const COMMAND_NAMES = {
+  saveCurrent: 'save_current'
+};
+
+const SHORTCUTS_PAGE_URL = 'chrome://extensions/shortcuts';
+let feedbackResetTimer = null;
+const FEEDBACK_DURATION_MS = 3500;
 
 chrome.runtime.onInstalled.addListener(async () => {
-  await setDefaultCommands();
+  await configurePanelBehavior();
+  await notifyMissingShortcuts();
+});
+
+chrome.runtime.onStartup.addListener(async () => {
+  await configurePanelBehavior();
+  await notifyMissingShortcuts();
+});
+
+chrome.commands.onCommand.addListener(async (command) => {
+  if (command === COMMAND_NAMES.saveCurrent) {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const result = await saveActiveTab(tab);
+    notifyPanels({
+      type: 'shortcut_save_result',
+      status: result.status
+    });
+    await showSaveFeedback(result.status);
+  }
+});
+
+async function configurePanelBehavior() {
   try {
     await chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
   } catch (err) {
     console.warn('setPanelBehavior failed', err);
   }
-});
 
-chrome.runtime.onStartup.addListener(async () => {
-  await setDefaultCommands();
-});
+  await chrome.action.setBadgeText({ text: '' });
+}
 
-chrome.commands.onCommand.addListener(async (command) => {
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-
-  if (command === 'toggle_panel' && tab?.windowId !== undefined) {
-    await ensureSidePanel(tab.windowId);
-    return;
+async function saveActiveTab(tab) {
+  if (!tab?.url) {
+    return { status: 'unavailable' };
   }
 
-  if (command === 'save_current') {
-    if (!tab?.url) return;
-    const payload = { type: 'save_current', url: tab.url, title: tab.title || tab.url };
-    const sent = await emitToPanels(payload);
+  try {
+    const result = await chrome.storage.local.get([STORAGE_KEYS.savedLinks]);
+    const storedLinks = Array.isArray(result[STORAGE_KEYS.savedLinks]) ? result[STORAGE_KEYS.savedLinks] : [];
 
-    if (!sent) {
-      chrome.notifications.create({
-        type: 'basic',
-        iconUrl: chrome.runtime.getURL('assets/img/icon.png'),
-        title: 'LumiPanel',
-        message: 'Saved link'
-      });
+    const alreadySaved = storedLinks.some((entry) => (
+      entry && typeof entry === 'object' && entry.url === tab.url
+    ));
+
+    if (alreadySaved) {
+      return { status: 'duplicate' };
     }
-  }
-});
 
-async function emitToPanels(message) {
+    const nextLink = {
+      url: tab.url,
+      title: tab.title || tab.url,
+      createdAt: Date.now()
+    };
+
+    await chrome.storage.local.set({
+      [STORAGE_KEYS.savedLinks]: [nextLink, ...storedLinks]
+    });
+
+    return { status: 'saved' };
+  } catch (err) {
+    console.warn('Save current shortcut failed', err);
+    return { status: 'failed' };
+  }
+}
+
+function notifyPanels(message) {
+  chrome.runtime.sendMessage(message, () => {
+    void chrome.runtime.lastError;
+  });
+}
+
+async function showSaveFeedback(status) {
+  let badgeText = 'OK';
+  let badgeColor = '#2d8a4f';
+
+  if (status === 'duplicate') {
+    badgeText = 'DUP';
+    badgeColor = '#8a6d1f';
+  } else if (status === 'unavailable') {
+    badgeText = 'NO';
+    badgeColor = '#8a3d2d';
+  } else if (status === 'failed') {
+    badgeText = 'ERR';
+    badgeColor = '#8a2d2d';
+  }
+
+  try {
+    await chrome.action.setBadgeBackgroundColor({ color: badgeColor });
+    await chrome.action.setBadgeText({ text: badgeText });
+
+    if (feedbackResetTimer) {
+      clearTimeout(feedbackResetTimer);
+    }
+
+    feedbackResetTimer = setTimeout(() => {
+      feedbackResetTimer = null;
+      void chrome.action.setBadgeText({ text: '' });
+    }, FEEDBACK_DURATION_MS);
+  } catch (err) {
+    console.warn('Action badge feedback failed', err);
+  }
+}
+
+function getCommands() {
   return new Promise((resolve) => {
-    chrome.runtime.sendMessage(message, () => {
-      resolve(!chrome.runtime.lastError);
+    chrome.commands.getAll((commands) => {
+      resolve(commands || []);
     });
   });
 }
 
-async function setDefaultCommands() {
-  await trySetCommand('toggle_panel', DEFAULT_SHORTCUTS.toggle);
-  await trySetCommand('save_current', DEFAULT_SHORTCUTS.save);
-}
+async function notifyMissingShortcuts() {
+  try {
+    const commands = await getCommands();
+    const targets = new Set([COMMAND_NAMES.saveCurrent]);
 
-async function trySetCommand(name, combos) {
-  for (const shortcut of combos) {
-    try {
-      await chrome.commands.update({ name, shortcut });
+    const missing = commands.filter((command) => {
+      if (!command.name || !targets.has(command.name)) {
+        return false;
+      }
+
+      return !command.shortcut;
+    });
+
+    if (missing.length === 0) {
       return;
-    } catch (err) {
-      console.warn(`Shortcut ${shortcut} failed for ${name}`, err);
     }
-  }
 
-  console.warn(`No available shortcuts for ${name}`);
+    await chrome.notifications.create('shortcut-assignment-warning', {
+      type: 'basic',
+      iconUrl: chrome.runtime.getURL('assets/img/icon.png'),
+      title: 'LumiPanel shortcuts not set',
+      message: `Assign shortcuts in ${SHORTCUTS_PAGE_URL}`
+    });
+  } catch (err) {
+    console.warn('Shortcut availability check failed', err);
+  }
 }
