@@ -142,7 +142,7 @@ async function notifyMissingShortcuts() {
     await chrome.notifications.create('shortcut-assignment-warning', {
       type: 'basic',
       iconUrl: chrome.runtime.getURL('assets/img/icon.png'),
-      title: 'LumiPanel shortcuts not set',
+      title: 'Tabs shortcuts not set',
       message: `Assign shortcuts in ${SHORTCUTS_PAGE_URL}`
     });
   } catch (err) {

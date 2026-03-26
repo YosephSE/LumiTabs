@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "version": "3.0.0",
-  "name": "LumiPanel",
+  "name": "Tabs",
   "description": "Save and manage links in a lightweight side panel with themes, fonts, and shortcuts.",
   "action": {
     "default_icon": "assets/img/icon.png"
@@ -20,7 +20,7 @@
       "suggested_key": {
         "default": "Ctrl+Shift+U"
       },
-      "description": "Save current tab to LumiPanel"
+      "description": "Save current tab to Tabs"
     }
   },
   "icons": {

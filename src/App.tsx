@@ -15,6 +15,7 @@ type TransferFormat = 'csv' | 'json';
 
 const GROUP_FILTER_ALL = '__all__';
 const GROUP_FILTER_UNGROUPED = '__ungrouped__';
+const COMMAND_ACTIVATE_EXTENSION = '_execute_action';
 const COMMAND_SAVE_CURRENT = 'save_current';
 
 const FONT_OPTIONS: { id: FontId; label: string }[] = [
@@ -36,6 +37,7 @@ const THEME_OPTIONS: {
 ];
 
 type ShortcutStatus = {
+  activateExtension: string;
   saveCurrent: string;
   isMissing: boolean;
 };
@@ -85,6 +87,42 @@ function getCompactUrl(url: string) {
   } catch (_err) {
     return url;
   }
+}
+
+function getAvatarInitial(title: string, url: string) {
+  const source = title.trim() || getDefaultTitle(url);
+  const match = source.match(/[A-Za-z0-9]/);
+  return match ? match[0].toUpperCase() : '?';
+}
+
+type LinkIconProps = {
+  url: string;
+  title: string;
+};
+
+function LinkIcon({ url, title }: LinkIconProps) {
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    setHasError(false);
+  }, [url]);
+
+  if (hasError) {
+    return <div className="lp-link-avatar" aria-hidden="true">{getAvatarInitial(title, url)}</div>;
+  }
+
+  const favicon = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(url)}&sz=64`;
+
+  return (
+    <img
+      className="lp-link-icon"
+      src={favicon}
+      alt=""
+      loading="lazy"
+      referrerPolicy="no-referrer"
+      onError={() => setHasError(true)}
+    />
+  );
 }
 
 function toSavedLink(candidate: { url?: unknown; title?: unknown; createdAt?: unknown; groupId?: unknown }) {
@@ -280,7 +318,7 @@ function parseJsonPayload(text: string): JsonImportPayload {
 
 function downloadFile(content: string, mimeType: string, extension: TransferFormat) {
   const stamp = new Date().toISOString().slice(0, 10);
-  const fileName = `lumitabs-links-${stamp}.${extension}`;
+  const fileName = `tabs-links-${stamp}.${extension}`;
   const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement('a');
@@ -307,6 +345,7 @@ export default function App() {
   const [activeGroup, setActiveGroup] = useState<string>(GROUP_FILTER_ALL);
   const [toasts, setToasts] = useState<string[]>([]);
   const [shortcutStatus, setShortcutStatus] = useState<ShortcutStatus>({
+    activateExtension: 'Action click',
     saveCurrent: 'Not set',
     isMissing: true
   });
@@ -366,16 +405,20 @@ export default function App() {
         });
       });
 
+      const activateCommand = commands.find((entry) => entry.name === COMMAND_ACTIVATE_EXTENSION);
       const command = commands.find((entry) => entry.name === COMMAND_SAVE_CURRENT);
+      const activateShortcut = activateCommand?.shortcut || '';
       const saveShortcut = command?.shortcut || '';
 
       setShortcutStatus({
+        activateExtension: activateShortcut || 'Action click',
         saveCurrent: saveShortcut || 'Not set',
         isMissing: !saveShortcut
       });
     } catch (err) {
       console.warn('Failed to load shortcuts', err);
       setShortcutStatus({
+        activateExtension: 'Unavailable',
         saveCurrent: 'Unavailable',
         isMissing: true
       });
@@ -740,7 +783,7 @@ export default function App() {
     <div className="lp-shell">
       <header className="lp-header">
         <div className="lp-title-row">
-          <div className="lp-title">LumiPanel</div>
+          <div className="lp-title">Tabs</div>
           {nav === 'settings' ? (
             <>
               <span className="lp-crumb-divider">/</span>
@@ -851,13 +894,12 @@ export default function App() {
             <div className="lp-link-list" role="list">
               {filteredLinks.map((link) => {
                 const groupName = link.groupId ? groupsById.get(link.groupId) : undefined;
-                const favicon = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(link.url)}&sz=64`;
 
                 return (
                   <article className="lp-link-card" key={link.url} role="listitem">
                     <div className="lp-link-main">
                       <div className="lp-link-icon-wrap">
-                        <img className="lp-link-icon" src={favicon} alt={link.title} />
+                        <LinkIcon url={link.url} title={link.title} />
                       </div>
 
                       <div className="lp-link-copy">
@@ -943,9 +985,9 @@ export default function App() {
                 <h2>Shortcuts</h2>
                 <div className="lp-shortcut-list">
                   <div className="lp-shortcut-item">
-                    <label>Toggle Panel</label>
+                    <label>Activate Extension</label>
                     <div className="lp-shortcut-input-wrap">
-                      <input value="Action click" readOnly />
+                      <input value={shortcutStatus.activateExtension} readOnly />
                       <span className="material-symbols-outlined">keyboard</span>
                     </div>
                   </div>
