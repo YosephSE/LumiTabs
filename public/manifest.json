@@ -16,6 +16,12 @@
     "default_path": "index.html"
   },
   "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+Y",
+        "mac": "Command+Shift+Y"
+      }
+    },
     "save_current": {
       "suggested_key": {
         "default": "Ctrl+Shift+U"

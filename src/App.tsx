@@ -17,6 +17,7 @@ const GROUP_FILTER_ALL = '__all__';
 const GROUP_FILTER_UNGROUPED = '__ungrouped__';
 const COMMAND_ACTIVATE_EXTENSION = '_execute_action';
 const COMMAND_SAVE_CURRENT = 'save_current';
+const GROUP_COLOR_PALETTE = ['#5fb8ff', '#57d6a4', '#f4a261', '#b388ff', '#ff7aa2', '#ffd166', '#4dd0e1', '#8bc34a'];
 
 const FONT_OPTIONS: { id: FontId; label: string }[] = [
   { id: 'manrope', label: 'Manrope' },
@@ -87,6 +88,22 @@ function getCompactUrl(url: string) {
   } catch (_err) {
     return url;
   }
+}
+
+function getGroupColor(groupId: string) {
+  let hash = 0;
+
+  for (let i = 0; i < groupId.length; i += 1) {
+    hash = (hash * 31 + groupId.charCodeAt(i)) >>> 0;
+  }
+
+  return GROUP_COLOR_PALETTE[hash % GROUP_COLOR_PALETTE.length];
+}
+
+function getGroupAccentStyle(color?: string): React.CSSProperties | undefined {
+  if (!color) return undefined;
+
+  return { ['--group-accent' as string]: color } as React.CSSProperties;
 }
 
 function getAvatarInitial(title: string, url: string) {
@@ -371,6 +388,15 @@ export default function App() {
   const jsonInputRef = useRef<HTMLInputElement>(null);
 
   const groupsById = useMemo(() => new Map(groups.map((group) => [group.id, group.name])), [groups]);
+  const groupColorById = useMemo(() => {
+    const colorMap = new Map<string, string>();
+
+    for (const group of groups) {
+      colorMap.set(group.id, getGroupColor(group.id));
+    }
+
+    return colorMap;
+  }, [groups]);
 
   const filteredLinks = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -935,20 +961,27 @@ export default function App() {
               >
                 Ungrouped
               </button>
-              {groups.map((group) => (
-                <button
-                  key={group.id}
-                  className={`lp-chip ${activeGroup === group.id ? 'active' : ''}`}
-                  onClick={() => setActiveGroup(group.id)}
-                >
-                  {group.name}
-                </button>
-              ))}
+              {groups.map((group) => {
+                const isActive = activeGroup === group.id;
+                const groupColor = groupColorById.get(group.id);
+
+                return (
+                  <button
+                    key={group.id}
+                    className={`lp-chip ${isActive ? 'active lp-chip-group-active' : ''}`}
+                    style={isActive ? getGroupAccentStyle(groupColor) : undefined}
+                    onClick={() => setActiveGroup(group.id)}
+                  >
+                    {group.name}
+                  </button>
+                );
+              })}
             </div>
 
             <div className="lp-link-list" role="list">
               {filteredLinks.map((link) => {
                 const groupName = link.groupId ? groupsById.get(link.groupId) : undefined;
+                const groupColor = link.groupId ? groupColorById.get(link.groupId) : undefined;
 
                 return (
                   <article className="lp-link-card" key={link.url} role="listitem">
@@ -963,7 +996,7 @@ export default function App() {
                           <span>{formatDistanceToNow(link.createdAt)}</span>
                           <span className="lp-dot" aria-hidden="true" />
                           {groupName ? (
-                            <span className="lp-link-tag">{groupName}</span>
+                            <span className="lp-link-tag" style={getGroupAccentStyle(groupColor)}>{groupName}</span>
                           ) : (
                             <span className="lp-link-url" title={link.url}>{getCompactUrl(link.url)}</span>
                           )}
@@ -995,6 +1028,7 @@ export default function App() {
 
                           {groups.map((group) => {
                             const isSelected = link.groupId === group.id;
+                            const groupColorValue = groupColorById.get(group.id);
                             return (
                               <button
                                 key={group.id}
@@ -1003,7 +1037,12 @@ export default function App() {
                                 role="menuitemradio"
                                 aria-checked={isSelected}
                               >
-                                <span className={`material-symbols-outlined lp-group-picker-check ${isSelected ? 'active' : ''}`}>check</span>
+                                <span
+                                  className={`material-symbols-outlined lp-group-picker-check ${isSelected ? 'active' : ''}`}
+                                  style={getGroupAccentStyle(groupColorValue)}
+                                >
+                                  check
+                                </span>
                                 <span>{group.name}</span>
                               </button>
                             );
@@ -1144,7 +1183,7 @@ export default function App() {
                   {groups.map((group) => (
                     <div className="lp-group-item" key={group.id}>
                       <div className="lp-group-item-main">
-                        <span className="lp-group-dot" />
+                        <span className="lp-group-dot" style={getGroupAccentStyle(groupColorById.get(group.id))} />
                         <span>{group.name}</span>
                       </div>
                       <button

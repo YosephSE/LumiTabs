@@ -373,6 +373,26 @@ body::-webkit-scrollbar {
   color: var(--primary-light);
 }
 
+.lp-chip.active.lp-chip-group-active {
+  background: var(--group-accent, var(--primary-strong));
+  color: #0c1622;
+}
+
+[data-theme='notebar-light'] .lp-chip {
+  background: #4f5b6d;
+  color: #eef4fb;
+}
+
+[data-theme='notebar-light'] .lp-chip.active {
+  background: #2f6f72;
+  color: #effbfc;
+}
+
+[data-theme='notebar-light'] .lp-chip.active.lp-chip-group-active {
+  background: var(--group-accent, var(--primary-strong));
+  color: #0c1622;
+}
+
 .lp-link-list {
   display: flex;
   flex-direction: column;
@@ -479,8 +499,9 @@ body::-webkit-scrollbar {
   padding: 2px 8px;
   font-size: 10px;
   font-weight: 700;
-  color: var(--primary-light);
-  background: color-mix(in srgb, var(--primary) 24%, transparent);
+  color: color-mix(in srgb, var(--group-accent, var(--primary)) 22%, var(--text) 78%);
+  background: color-mix(in srgb, var(--group-accent, var(--primary)) 24%, transparent);
+  border: 1px solid color-mix(in srgb, var(--group-accent, var(--primary)) 48%, transparent);
 }
 
 .lp-link-actions {
@@ -549,7 +570,7 @@ body::-webkit-scrollbar {
 
 .lp-group-picker-check {
   font-size: 16px;
-  color: var(--primary);
+  color: var(--group-accent, var(--text-subtle));
   opacity: 0;
 }
 
@@ -837,7 +858,7 @@ body::-webkit-scrollbar {
   width: 8px;
   height: 8px;
   border-radius: 999px;
-  background: var(--primary);
+  background: var(--group-accent, var(--primary));
   flex-shrink: 0;
 }
 
@@ -917,7 +938,7 @@ body::-webkit-scrollbar {
 .lp-danger-button {
   width: 100%;
   min-height: 48px;
-  color: #ffdad6;
+  color: var(--error);
   background: var(--error-surface);
   font-size: 14px;
   font-weight: 800;
@@ -1038,6 +1059,20 @@ body::-webkit-scrollbar {
   background: var(--primary-strong);
 }
 
+[data-theme='notebar-light'] .lp-nav {
+  border-top-color: #b7c4d4;
+  background: #e3eaf2;
+}
+
+[data-theme='notebar-light'] .lp-nav button {
+  color: #445262;
+}
+
+[data-theme='notebar-light'] .lp-nav button.active {
+  color: #eefbfc;
+  background: #2f6f72;
+}
+
 .lp-nav button .material-symbols-outlined {
   font-size: 20px;
 }
@@ -1079,7 +1114,14 @@ body::-webkit-scrollbar {
   }
 
   .lp-quick-actions {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .lp-quick-action {
+    min-height: 96px;
+    padding: 12px;
+    font-size: 13px;
   }
 
   .lp-group-grid,
