@@ -917,7 +917,7 @@ body::-webkit-scrollbar {
 .lp-danger-button {
   width: 100%;
   min-height: 48px;
-  color: #ffdad6;
+  color: var(--error);
   background: var(--error-surface);
   font-size: 14px;
   font-weight: 800;
