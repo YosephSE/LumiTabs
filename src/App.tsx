@@ -972,7 +972,7 @@ export default function App() {
                           title="Assign group"
                           aria-haspopup="true"
                         >
-                          <span className="material-symbols-outlined">folder</span>
+                          <span className={`material-symbols-outlined ${link.groupId ? 'filled' : ''}`}>folder</span>
                         </button>
 
                         <div className="lp-group-picker-menu" role="menu" aria-label={`Assign group for ${link.title}`}>
