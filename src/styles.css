@@ -571,9 +571,9 @@ body::-webkit-scrollbar {
 }
 
 .theme-preview-dark {
-  color: var(--text);
-  border: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
-  background: var(--surface-lowest);
+  color: #dfe7f2;
+  border: 1px solid #2d3947;
+  background: linear-gradient(145deg, #0d131a, #1a232e);
 }
 
 .theme-preview-ocean {
@@ -853,6 +853,61 @@ body::-webkit-scrollbar {
   gap: 8px;
 }
 
+.lp-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: color-mix(in srgb, #000 46%, transparent);
+  backdrop-filter: blur(4px);
+}
+
+.lp-modal {
+  width: min(460px, 100%);
+  border-radius: 16px;
+  padding: 18px;
+  background: var(--surface-low);
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  box-shadow: var(--shadow-soft);
+}
+
+.lp-modal h3 {
+  margin: 0;
+  font-family: var(--heading-font);
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+
+.lp-modal p {
+  margin: 10px 0 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.lp-modal-actions {
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.lp-modal-actions .lp-secondary-btn {
+  min-height: 42px;
+}
+
+.lp-modal-danger-button {
+  width: auto;
+  min-height: 42px;
+  padding: 0 14px;
+}
+
 .lp-danger-button:disabled,
 .lp-chip-action:disabled,
 .lp-transfer-button:disabled,
@@ -974,6 +1029,15 @@ body::-webkit-scrollbar {
 
   .lp-toast {
     min-width: 0;
+    width: 100%;
+  }
+
+  .lp-modal-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .lp-modal-danger-button {
     width: 100%;
   }
 }

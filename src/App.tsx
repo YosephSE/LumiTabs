@@ -354,11 +354,13 @@ export default function App() {
   const [newLinkError, setNewLinkError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isAddOpen, setIsAddOpen] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);
   const [deletingGroupId, setDeletingGroupId] = useState<string | null>(null);
   const [isClearingAll, setIsClearingAll] = useState(false);
+  const [isClearAllModalOpen, setIsClearAllModalOpen] = useState(false);
   const [transferFormat, setTransferFormat] = useState<TransferFormat>('csv');
   const [isImporting, setIsImporting] = useState(false);
 
@@ -523,6 +525,25 @@ export default function App() {
     }
   }, [isSearchOpen, nav]);
 
+  useEffect(() => {
+    if (isAddOpen && nav === 'links') {
+      addInputRef.current?.focus();
+    }
+  }, [isAddOpen, nav]);
+
+  useEffect(() => {
+    if (!isClearAllModalOpen) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !isClearingAll) {
+        setIsClearAllModalOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isClearAllModalOpen, isClearingAll]);
+
   const handleSaveCurrent = async () => {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (!tab?.url) {
@@ -609,13 +630,26 @@ export default function App() {
     }
   };
 
-  const handleClearAllLinks = async () => {
+  const handleClearAllLinks = () => {
+    if (isClearingAll || links.length === 0) return;
+
+    setIsClearAllModalOpen(true);
+  };
+
+  const handleCloseClearAllModal = () => {
+    if (isClearingAll) return;
+
+    setIsClearAllModalOpen(false);
+  };
+
+  const handleConfirmClearAllLinks = async () => {
     if (isClearingAll || links.length === 0) return;
 
     setIsClearingAll(true);
     try {
       await clearLinks();
       pushToast('Cleared all links');
+      setIsClearAllModalOpen(false);
     } finally {
       setIsClearingAll(false);
     }
@@ -768,15 +802,20 @@ export default function App() {
   };
 
   const handleHeaderAdd = () => {
-    if (nav === 'links') {
-      addInputRef.current?.focus();
+    if (nav !== 'links') {
+      setNav('links');
+      setIsAddOpen(true);
       return;
     }
 
-    setNav('links');
-    setTimeout(() => {
-      addInputRef.current?.focus();
-    }, 0);
+    setIsAddOpen((prev) => {
+      const next = !prev;
+      if (!next) {
+        setNewLink('');
+        setNewLinkError('');
+      }
+      return next;
+    });
   };
 
   return (
@@ -816,44 +855,48 @@ export default function App() {
               </button>
             </div>
 
-            <div className="lp-add-row">
-              <input
-                ref={addInputRef}
-                className={`lp-add-input ${newLinkError ? 'has-error' : ''}`}
-                placeholder="Paste URL here..."
-                value={newLink}
-                onChange={(event) => {
-                  const value = event.target.value;
-                  setNewLink(value);
+            {isAddOpen ? (
+              <>
+                <div className="lp-add-row">
+                  <input
+                    ref={addInputRef}
+                    className={`lp-add-input ${newLinkError ? 'has-error' : ''}`}
+                    placeholder="Paste URL here..."
+                    value={newLink}
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      setNewLink(value);
 
-                  if (!value.trim()) {
-                    setNewLinkError('');
-                    return;
-                  }
+                      if (!value.trim()) {
+                        setNewLinkError('');
+                        return;
+                      }
 
-                  if (normalizeUrl(value)) {
-                    setNewLinkError('');
-                  } else {
-                    setNewLinkError('Enter a valid URL (http or https).');
-                  }
-                }}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') {
-                    event.preventDefault();
-                    void handleAddLink();
-                  }
-                }}
-                aria-invalid={newLinkError ? 'true' : 'false'}
-              />
-              <button
-                className="lp-add-button"
-                onClick={() => void handleAddLink()}
-                disabled={!newLink.trim() || Boolean(newLinkError) || isAdding}
-              >
-                {isAdding ? 'Adding...' : 'Add'}
-              </button>
-            </div>
-            {newLinkError ? <div className="lp-error-text">{newLinkError}</div> : null}
+                      if (normalizeUrl(value)) {
+                        setNewLinkError('');
+                      } else {
+                        setNewLinkError('Enter a valid URL (http or https).');
+                      }
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault();
+                        void handleAddLink();
+                      }
+                    }}
+                    aria-invalid={newLinkError ? 'true' : 'false'}
+                  />
+                  <button
+                    className="lp-add-button"
+                    onClick={() => void handleAddLink()}
+                    disabled={!newLink.trim() || Boolean(newLinkError) || isAdding}
+                  >
+                    {isAdding ? 'Adding...' : 'Add'}
+                  </button>
+                </div>
+                {newLinkError ? <div className="lp-error-text">{newLinkError}</div> : null}
+              </>
+            ) : null}
 
             {isSearchOpen ? (
               <div className="lp-search-row">
@@ -1027,7 +1070,7 @@ export default function App() {
               <div className="lp-group-create-row">
                 <input
                   className="lp-search-input"
-                  placeholder="Create group..."
+                  placeholder="Group Name"
                   value={newGroupName}
                   onChange={(event) => setNewGroupName(event.target.value)}
                   onKeyDown={(event) => {
@@ -1134,6 +1177,38 @@ export default function App() {
           </div>
         )}
       </main>
+
+      {isClearAllModalOpen ? (
+        <div className="lp-modal-backdrop" role="presentation" onClick={handleCloseClearAllModal}>
+          <section
+            className="lp-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="clear-all-links-title"
+            aria-describedby="clear-all-links-description"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h3 id="clear-all-links-title">Clear all links?</h3>
+            <p id="clear-all-links-description">
+              This will permanently remove all saved links. This action cannot be undone.
+            </p>
+
+            <div className="lp-modal-actions">
+              <button className="lp-secondary-btn" onClick={handleCloseClearAllModal} disabled={isClearingAll}>
+                Cancel
+              </button>
+              <button
+                className="lp-danger-button lp-modal-danger-button"
+                onClick={() => void handleConfirmClearAllLinks()}
+                disabled={isClearingAll}
+              >
+                <span className="material-symbols-outlined">delete_forever</span>
+                <span>{isClearingAll ? 'Clearing...' : 'Clear All Links'}</span>
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
 
       <nav className="lp-nav">
         {NAVS.map((item) => {

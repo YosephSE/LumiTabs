@@ -172,7 +172,7 @@ export function SettingsPanel({
         <div className="group-create-row">
           <input
             className="input group-input"
-            placeholder="Create group"
+            placeholder="Group Name"
             value={newGroup}
             onChange={(event) => setNewGroup(event.target.value)}
             onKeyDown={(event) => {
