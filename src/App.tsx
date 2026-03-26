@@ -351,6 +351,7 @@ export default function App() {
     groups,
     settings,
     addLink,
+    addLinksBulk,
     removeLink,
     clearLinks,
     saveSettings,
@@ -584,13 +585,22 @@ export default function App() {
   const handleSaveAll = async () => {
     const tabs = await chrome.tabs.query({ currentWindow: true });
     const targetGroupId = resolveTargetGroupId();
+    const nextLinks: SavedLink[] = [];
 
     for (const tab of tabs) {
-      if (tab.url) {
-        await handleSaveUrl(tab.url, tab.title || tab.url, false, targetGroupId);
+      if (!tab.url) {
+        continue;
       }
+
+      nextLinks.push({
+        url: tab.url,
+        title: tab.title || tab.url,
+        createdAt: Date.now(),
+        groupId: targetGroupId
+      });
     }
 
+    await addLinksBulk(nextLinks);
     pushToast('Saved all open tabs');
   };
 
@@ -750,8 +760,7 @@ export default function App() {
         }
       }
 
-      let importedCount = 0;
-      let skippedCount = 0;
+      const linksToImport: SavedLink[] = [];
 
       for (const link of payload.links) {
         let resolvedGroupId: string | undefined;
@@ -764,19 +773,15 @@ export default function App() {
           resolvedGroupId = link.groupId;
         }
 
-        const didAdd = await addLink({
+        linksToImport.push({
           url: link.url,
           title: link.title,
           createdAt: link.createdAt,
           groupId: resolvedGroupId
         });
-
-        if (didAdd) {
-          importedCount += 1;
-        } else {
-          skippedCount += 1;
-        }
       }
+
+      const { added: importedCount, skipped: skippedCount } = await addLinksBulk(linksToImport);
 
       if (importedCount === 0) {
         pushToast('All imported links already exist');
@@ -1333,3 +1338,4 @@ export default function App() {
     </div>
   );
 }
+
