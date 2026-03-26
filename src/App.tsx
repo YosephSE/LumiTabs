@@ -15,6 +15,7 @@ type TransferFormat = 'csv' | 'json';
 
 const GROUP_FILTER_ALL = '__all__';
 const GROUP_FILTER_UNGROUPED = '__ungrouped__';
+const COMMAND_ACTIVATE_EXTENSION = '_execute_action';
 const COMMAND_SAVE_CURRENT = 'save_current';
 
 const FONT_OPTIONS: { id: FontId; label: string }[] = [
@@ -36,6 +37,7 @@ const THEME_OPTIONS: {
 ];
 
 type ShortcutStatus = {
+  activateExtension: string;
   saveCurrent: string;
   isMissing: boolean;
 };
@@ -85,6 +87,42 @@ function getCompactUrl(url: string) {
   } catch (_err) {
     return url;
   }
+}
+
+function getAvatarInitial(title: string, url: string) {
+  const source = title.trim() || getDefaultTitle(url);
+  const match = source.match(/[A-Za-z0-9]/);
+  return match ? match[0].toUpperCase() : '?';
+}
+
+type LinkIconProps = {
+  url: string;
+  title: string;
+};
+
+function LinkIcon({ url, title }: LinkIconProps) {
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    setHasError(false);
+  }, [url]);
+
+  if (hasError) {
+    return <div className="lp-link-avatar" aria-hidden="true">{getAvatarInitial(title, url)}</div>;
+  }
+
+  const favicon = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(url)}&sz=64`;
+
+  return (
+    <img
+      className="lp-link-icon"
+      src={favicon}
+      alt=""
+      loading="lazy"
+      referrerPolicy="no-referrer"
+      onError={() => setHasError(true)}
+    />
+  );
 }
 
 function toSavedLink(candidate: { url?: unknown; title?: unknown; createdAt?: unknown; groupId?: unknown }) {
@@ -280,7 +318,7 @@ function parseJsonPayload(text: string): JsonImportPayload {
 
 function downloadFile(content: string, mimeType: string, extension: TransferFormat) {
   const stamp = new Date().toISOString().slice(0, 10);
-  const fileName = `lumitabs-links-${stamp}.${extension}`;
+  const fileName = `tabs-links-${stamp}.${extension}`;
   const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement('a');
@@ -300,13 +338,15 @@ export default function App() {
     clearLinks,
     saveSettings,
     createGroup,
-    deleteGroup
+    deleteGroup,
+    moveLinkToGroup
   } = useStorage();
 
   const [nav, setNav] = useState<NavId>('links');
   const [activeGroup, setActiveGroup] = useState<string>(GROUP_FILTER_ALL);
   const [toasts, setToasts] = useState<string[]>([]);
   const [shortcutStatus, setShortcutStatus] = useState<ShortcutStatus>({
+    activateExtension: 'Action click',
     saveCurrent: 'Not set',
     isMissing: true
   });
@@ -315,11 +355,13 @@ export default function App() {
   const [newLinkError, setNewLinkError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isAddOpen, setIsAddOpen] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);
   const [deletingGroupId, setDeletingGroupId] = useState<string | null>(null);
   const [isClearingAll, setIsClearingAll] = useState(false);
+  const [isClearAllModalOpen, setIsClearAllModalOpen] = useState(false);
   const [transferFormat, setTransferFormat] = useState<TransferFormat>('csv');
   const [isImporting, setIsImporting] = useState(false);
 
@@ -366,16 +408,20 @@ export default function App() {
         });
       });
 
+      const activateCommand = commands.find((entry) => entry.name === COMMAND_ACTIVATE_EXTENSION);
       const command = commands.find((entry) => entry.name === COMMAND_SAVE_CURRENT);
+      const activateShortcut = activateCommand?.shortcut || '';
       const saveShortcut = command?.shortcut || '';
 
       setShortcutStatus({
+        activateExtension: activateShortcut || 'Action click',
         saveCurrent: saveShortcut || 'Not set',
         isMissing: !saveShortcut
       });
     } catch (err) {
       console.warn('Failed to load shortcuts', err);
       setShortcutStatus({
+        activateExtension: 'Unavailable',
         saveCurrent: 'Unavailable',
         isMissing: true
       });
@@ -480,6 +526,25 @@ export default function App() {
     }
   }, [isSearchOpen, nav]);
 
+  useEffect(() => {
+    if (isAddOpen && nav === 'links') {
+      addInputRef.current?.focus();
+    }
+  }, [isAddOpen, nav]);
+
+  useEffect(() => {
+    if (!isClearAllModalOpen) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !isClearingAll) {
+        setIsClearAllModalOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isClearAllModalOpen, isClearingAll]);
+
   const handleSaveCurrent = async () => {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (!tab?.url) {
@@ -505,6 +570,10 @@ export default function App() {
 
   const handleOpen = (url: string) => {
     chrome.tabs.create({ url });
+  };
+
+  const handleMoveLinkToGroup = (url: string, groupId?: string) => {
+    void moveLinkToGroup(url, groupId);
   };
 
   const handleAddLink = async () => {
@@ -566,13 +635,26 @@ export default function App() {
     }
   };
 
-  const handleClearAllLinks = async () => {
+  const handleClearAllLinks = () => {
+    if (isClearingAll || links.length === 0) return;
+
+    setIsClearAllModalOpen(true);
+  };
+
+  const handleCloseClearAllModal = () => {
+    if (isClearingAll) return;
+
+    setIsClearAllModalOpen(false);
+  };
+
+  const handleConfirmClearAllLinks = async () => {
     if (isClearingAll || links.length === 0) return;
 
     setIsClearingAll(true);
     try {
       await clearLinks();
       pushToast('Cleared all links');
+      setIsClearAllModalOpen(false);
     } finally {
       setIsClearingAll(false);
     }
@@ -716,31 +798,43 @@ export default function App() {
   };
 
   const handleToggleSearch = () => {
-    if (nav !== 'links') return;
-
-    setIsSearchOpen((prev) => !prev);
-    if (isSearchOpen) {
-      setSearchQuery('');
-    }
-  };
-
-  const handleHeaderAdd = () => {
-    if (nav === 'links') {
-      addInputRef.current?.focus();
+    if (nav !== 'links') {
+      setNav('links');
+      setIsSearchOpen(true);
       return;
     }
 
-    setNav('links');
-    setTimeout(() => {
-      addInputRef.current?.focus();
-    }, 0);
+    setIsSearchOpen((prev) => {
+      const next = !prev;
+      if (!next) {
+        setSearchQuery('');
+      }
+      return next;
+    });
+  };
+
+  const handleHeaderAdd = () => {
+    if (nav !== 'links') {
+      setNav('links');
+      setIsAddOpen(true);
+      return;
+    }
+
+    setIsAddOpen((prev) => {
+      const next = !prev;
+      if (!next) {
+        setNewLink('');
+        setNewLinkError('');
+      }
+      return next;
+    });
   };
 
   return (
     <div className="lp-shell">
       <header className="lp-header">
         <div className="lp-title-row">
-          <div className="lp-title">LumiPanel</div>
+          <div className="lp-title">Tabs</div>
           {nav === 'settings' ? (
             <>
               <span className="lp-crumb-divider">/</span>
@@ -773,44 +867,48 @@ export default function App() {
               </button>
             </div>
 
-            <div className="lp-add-row">
-              <input
-                ref={addInputRef}
-                className={`lp-add-input ${newLinkError ? 'has-error' : ''}`}
-                placeholder="Paste URL here..."
-                value={newLink}
-                onChange={(event) => {
-                  const value = event.target.value;
-                  setNewLink(value);
+            {isAddOpen ? (
+              <>
+                <div className="lp-add-row">
+                  <input
+                    ref={addInputRef}
+                    className={`lp-add-input ${newLinkError ? 'has-error' : ''}`}
+                    placeholder="Paste URL here..."
+                    value={newLink}
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      setNewLink(value);
 
-                  if (!value.trim()) {
-                    setNewLinkError('');
-                    return;
-                  }
+                      if (!value.trim()) {
+                        setNewLinkError('');
+                        return;
+                      }
 
-                  if (normalizeUrl(value)) {
-                    setNewLinkError('');
-                  } else {
-                    setNewLinkError('Enter a valid URL (http or https).');
-                  }
-                }}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') {
-                    event.preventDefault();
-                    void handleAddLink();
-                  }
-                }}
-                aria-invalid={newLinkError ? 'true' : 'false'}
-              />
-              <button
-                className="lp-add-button"
-                onClick={() => void handleAddLink()}
-                disabled={!newLink.trim() || Boolean(newLinkError) || isAdding}
-              >
-                {isAdding ? 'Adding...' : 'Add'}
-              </button>
-            </div>
-            {newLinkError ? <div className="lp-error-text">{newLinkError}</div> : null}
+                      if (normalizeUrl(value)) {
+                        setNewLinkError('');
+                      } else {
+                        setNewLinkError('Enter a valid URL (http or https).');
+                      }
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault();
+                        void handleAddLink();
+                      }
+                    }}
+                    aria-invalid={newLinkError ? 'true' : 'false'}
+                  />
+                  <button
+                    className="lp-add-button"
+                    onClick={() => void handleAddLink()}
+                    disabled={!newLink.trim() || Boolean(newLinkError) || isAdding}
+                  >
+                    {isAdding ? 'Adding...' : 'Add'}
+                  </button>
+                </div>
+                {newLinkError ? <div className="lp-error-text">{newLinkError}</div> : null}
+              </>
+            ) : null}
 
             {isSearchOpen ? (
               <div className="lp-search-row">
@@ -851,13 +949,12 @@ export default function App() {
             <div className="lp-link-list" role="list">
               {filteredLinks.map((link) => {
                 const groupName = link.groupId ? groupsById.get(link.groupId) : undefined;
-                const favicon = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(link.url)}&sz=64`;
 
                 return (
                   <article className="lp-link-card" key={link.url} role="listitem">
                     <div className="lp-link-main">
                       <div className="lp-link-icon-wrap">
-                        <img className="lp-link-icon" src={favicon} alt={link.title} />
+                        <LinkIcon url={link.url} title={link.title} />
                       </div>
 
                       <div className="lp-link-copy">
@@ -875,6 +972,49 @@ export default function App() {
                     </div>
 
                     <div className="lp-link-actions">
+                      <div className="lp-group-picker">
+                        <button
+                          className="lp-link-action"
+                          aria-label="Assign group"
+                          title="Assign group"
+                          aria-haspopup="true"
+                        >
+                          <span className={`material-symbols-outlined ${link.groupId ? 'filled' : ''}`}>folder</span>
+                        </button>
+
+                        <div className="lp-group-picker-menu" role="menu" aria-label={`Assign group for ${link.title}`}>
+                          <button
+                            className={`lp-group-picker-item ${!link.groupId ? 'active' : ''}`}
+                            onClick={() => handleMoveLinkToGroup(link.url)}
+                            role="menuitemradio"
+                            aria-checked={!link.groupId}
+                          >
+                            <span className={`material-symbols-outlined lp-group-picker-check ${!link.groupId ? 'active' : ''}`}>check</span>
+                            <span>Ungrouped</span>
+                          </button>
+
+                          {groups.map((group) => {
+                            const isSelected = link.groupId === group.id;
+                            return (
+                              <button
+                                key={group.id}
+                                className={`lp-group-picker-item ${isSelected ? 'active' : ''}`}
+                                onClick={() => handleMoveLinkToGroup(link.url, group.id)}
+                                role="menuitemradio"
+                                aria-checked={isSelected}
+                              >
+                                <span className={`material-symbols-outlined lp-group-picker-check ${isSelected ? 'active' : ''}`}>check</span>
+                                <span>{group.name}</span>
+                              </button>
+                            );
+                          })}
+
+                          {groups.length === 0 ? (
+                            <div className="lp-group-picker-empty">No groups yet</div>
+                          ) : null}
+                        </div>
+                      </div>
+
                       <button
                         className="lp-link-action"
                         onClick={() => handleOpen(link.url)}
@@ -943,9 +1083,9 @@ export default function App() {
                 <h2>Shortcuts</h2>
                 <div className="lp-shortcut-list">
                   <div className="lp-shortcut-item">
-                    <label>Toggle Panel</label>
+                    <label>Activate Extension</label>
                     <div className="lp-shortcut-input-wrap">
-                      <input value="Action click" readOnly />
+                      <input value={shortcutStatus.activateExtension} readOnly />
                       <span className="material-symbols-outlined">keyboard</span>
                     </div>
                   </div>
@@ -985,7 +1125,7 @@ export default function App() {
               <div className="lp-group-create-row">
                 <input
                   className="lp-search-input"
-                  placeholder="Create group..."
+                  placeholder="Group Name"
                   value={newGroupName}
                   onChange={(event) => setNewGroupName(event.target.value)}
                   onKeyDown={(event) => {
@@ -1092,6 +1232,38 @@ export default function App() {
           </div>
         )}
       </main>
+
+      {isClearAllModalOpen ? (
+        <div className="lp-modal-backdrop" role="presentation" onClick={handleCloseClearAllModal}>
+          <section
+            className="lp-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="clear-all-links-title"
+            aria-describedby="clear-all-links-description"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h3 id="clear-all-links-title">Clear all links?</h3>
+            <p id="clear-all-links-description">
+              This will permanently remove all saved links. This action cannot be undone.
+            </p>
+
+            <div className="lp-modal-actions">
+              <button className="lp-secondary-btn" onClick={handleCloseClearAllModal} disabled={isClearingAll}>
+                Cancel
+              </button>
+              <button
+                className="lp-danger-button lp-modal-danger-button"
+                onClick={() => void handleConfirmClearAllLinks()}
+                disabled={isClearingAll}
+              >
+                <span className="material-symbols-outlined">delete_forever</span>
+                <span>{isClearingAll ? 'Clearing...' : 'Clear All Links'}</span>
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
 
       <nav className="lp-nav">
         {NAVS.map((item) => {

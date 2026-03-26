@@ -1,11 +1,11 @@
-# LumiPanel - Chrome Side Panel Extension
+# Tabs - Chrome Side Panel Extension
 
 A side-panel bookmark manager with themes, fonts, shortcuts, and metadata previews.
 Built with React + Vite + TypeScript.
 
 ## Features
 - Save current or all open tabs, with duplicate protection.
-- Keyboard shortcuts for toggling the panel and saving the current page.
+- Keyboard shortcuts for activating the extension and saving the current page.
 - Theming: system default plus NoteBar-inspired Light/Dark/Ocean palettes.
 - Fonts: Manrope, Source Sans 3, and Work Sans.
 - Metadata previews (favicon, title, URL) and quick open/delete.
