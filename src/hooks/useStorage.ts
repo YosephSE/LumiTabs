@@ -28,7 +28,6 @@ export function useStorage() {
   const [links, setLinks] = useState<SavedLink[]>([]);
   const [groups, setGroups] = useState<LinkGroup[]>([]);
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     void load();
@@ -78,22 +77,43 @@ export function useStorage() {
     setGroups(storedGroups);
     setSettings(storedSettings);
     migrateLocalStorage(normalizedLinks);
-    setLoading(false);
   };
 
-  const addLink = useCallback(async (link: SavedLink) => {
-    const result = await chrome.storage.local.get([STORAGE_KEYS.savedLinks]);
-    const storedLinks: SavedLink[] = result[STORAGE_KEYS.savedLinks] || [];
-
-    if (storedLinks.some((savedLink) => savedLink.url === link.url)) {
-      return false;
+  const addLinksBulk = useCallback(async (nextLinks: SavedLink[]) => {
+    if (nextLinks.length === 0) {
+      return { added: 0, skipped: 0 };
     }
 
-    const next = [link, ...storedLinks];
+    const result = await chrome.storage.local.get([STORAGE_KEYS.savedLinks]);
+    const storedLinks: SavedLink[] = result[STORAGE_KEYS.savedLinks] || [];
+    const seenUrls = new Set(storedLinks.map((savedLink) => savedLink.url));
+    const accepted: SavedLink[] = [];
+    let skipped = 0;
+
+    for (const link of nextLinks) {
+      if (seenUrls.has(link.url)) {
+        skipped += 1;
+        continue;
+      }
+
+      seenUrls.add(link.url);
+      accepted.push(link);
+    }
+
+    if (accepted.length === 0) {
+      return { added: 0, skipped };
+    }
+
+    const next = [...accepted.reverse(), ...storedLinks];
     await chrome.storage.local.set({ [STORAGE_KEYS.savedLinks]: next });
     setLinks(next);
-    return true;
+    return { added: accepted.length, skipped };
   }, []);
+
+  const addLink = useCallback(async (link: SavedLink) => {
+    const result = await addLinksBulk([link]);
+    return result.added === 1;
+  }, [addLinksBulk]);
 
   const removeLink = useCallback(async (url: string) => {
     setLinks((prev) => {
@@ -208,7 +228,7 @@ export function useStorage() {
     links,
     groups,
     settings,
-    loading,
+    addLinksBulk,
     addLink,
     removeLink,
     clearLinks,
@@ -237,3 +257,4 @@ function migrateLocalStorage(currentLinks: SavedLink[]) {
     console.warn('Migration failed', e);
   }
 }
+
