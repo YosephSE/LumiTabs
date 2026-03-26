@@ -90,10 +90,10 @@ export function LinkList({
 
   return (
     <div className="section">
-      <div className="add-link-row">
+      <div className="add-link-row add-link-shell">
         <input
           className={`input add-link-input ${newLinkError ? 'input-error' : ''}`}
-          placeholder="Paste a link and press Enter"
+          placeholder="Paste URL here"
           value={newLink}
           onChange={(e) => handleNewLinkChange(e.target.value)}
           aria-invalid={newLinkError ? 'true' : 'false'}
@@ -118,8 +118,8 @@ export function LinkList({
             }
           }}
         />
-        <button className="btn" onClick={() => void handleAdd()} disabled={!hasDraft || !isDraftValid || isAdding}>
-          {isAdding ? 'Adding...' : 'Add Link'}
+        <button className="btn add-link-cta" onClick={() => void handleAdd()} disabled={!hasDraft || !isDraftValid || isAdding}>
+          {isAdding ? 'Adding...' : 'Add'}
         </button>
       </div>
       {newLinkError ? <div className="hint input-hint-error">{newLinkError}</div> : null}
@@ -157,7 +157,7 @@ export function LinkList({
         <div className="section-actions">
           <input
             className="input"
-            placeholder="Search..."
+            placeholder="Search links"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />

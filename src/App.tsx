@@ -635,34 +635,38 @@ export default function App() {
 
   return (
     <div className="app">
-      <main className="main">
-        <header className="section-header" style={{ marginBottom: 12 }}>
+      <header className="topbar">
+        <div className="topbar-title-wrap">
           <h1>LumiPanel</h1>
-          {nav === 'links' && (
-            <div className="section-actions">
-              <button className="btn" onClick={handleSaveCurrent}>
-                Save Current
-              </button>
-              <button className="ghost" onClick={handleSaveAll}>
-                Save All
-              </button>
-            </div>
-          )}
-        </header>
+          <span className="topbar-kicker">Link vault</span>
+        </div>
+      </header>
 
+      <main className="main">
         {nav === 'links' ? (
-          <LinkList
-            links={links}
-            groups={groups}
-            activeGroup={activeGroup}
-            allGroupKey={GROUP_FILTER_ALL}
-            ungroupedGroupKey={GROUP_FILTER_UNGROUPED}
-            onOpen={handleOpen}
-            onDelete={removeLink}
-            onAdd={handleAddPastedLink}
-            onMove={(url, groupId) => void moveLinkToGroup(url, groupId)}
-            onGroupChange={setActiveGroup}
-          />
+          <>
+            <section className="quick-actions">
+              <button className="btn action-card action-card-primary" onClick={handleSaveCurrent}>
+                <span>Save Current</span>
+              </button>
+              <button className="ghost action-card" onClick={handleSaveAll}>
+                <span>Save All Tabs</span>
+              </button>
+            </section>
+
+            <LinkList
+              links={links}
+              groups={groups}
+              activeGroup={activeGroup}
+              allGroupKey={GROUP_FILTER_ALL}
+              ungroupedGroupKey={GROUP_FILTER_UNGROUPED}
+              onOpen={handleOpen}
+              onDelete={removeLink}
+              onAdd={handleAddPastedLink}
+              onMove={(url, groupId) => void moveLinkToGroup(url, groupId)}
+              onGroupChange={setActiveGroup}
+            />
+          </>
         ) : (
           <SettingsPanel
             settings={settings}
@@ -691,6 +695,7 @@ export default function App() {
             title={item.label}
           >
             <item.Icon />
+            <span>{item.label}</span>
           </button>
         ))}
       </nav>
