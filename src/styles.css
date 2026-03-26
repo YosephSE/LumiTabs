@@ -479,8 +479,9 @@ body::-webkit-scrollbar {
   padding: 2px 8px;
   font-size: 10px;
   font-weight: 700;
-  color: var(--primary-light);
-  background: color-mix(in srgb, var(--primary) 24%, transparent);
+  color: color-mix(in srgb, var(--group-accent, var(--primary)) 22%, var(--text) 78%);
+  background: color-mix(in srgb, var(--group-accent, var(--primary)) 24%, transparent);
+  border: 1px solid color-mix(in srgb, var(--group-accent, var(--primary)) 48%, transparent);
 }
 
 .lp-link-actions {
@@ -549,7 +550,7 @@ body::-webkit-scrollbar {
 
 .lp-group-picker-check {
   font-size: 16px;
-  color: var(--primary);
+  color: var(--group-accent, var(--text-subtle));
   opacity: 0;
 }
 
@@ -837,7 +838,7 @@ body::-webkit-scrollbar {
   width: 8px;
   height: 8px;
   border-radius: 999px;
-  background: var(--primary);
+  background: var(--group-accent, var(--primary));
   flex-shrink: 0;
 }
 
