@@ -798,12 +798,19 @@ export default function App() {
   };
 
   const handleToggleSearch = () => {
-    if (nav !== 'links') return;
-
-    setIsSearchOpen((prev) => !prev);
-    if (isSearchOpen) {
-      setSearchQuery('');
+    if (nav !== 'links') {
+      setNav('links');
+      setIsSearchOpen(true);
+      return;
     }
+
+    setIsSearchOpen((prev) => {
+      const next = !prev;
+      if (!next) {
+        setSearchQuery('');
+      }
+      return next;
+    });
   };
 
   const handleHeaderAdd = () => {
