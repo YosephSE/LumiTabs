@@ -378,6 +378,20 @@ body::-webkit-scrollbar {
   color: #0c1622;
 }
 
+[data-theme='notebar-light'] .lp-chip {
+  background: #4f5b6d;
+  color: #eef4fb;
+}
+
+[data-theme='notebar-light'] .lp-chip.active {
+  background: #2f6f72;
+  color: #effbfc;
+}
+
+[data-theme='notebar-light'] .lp-chip.active.lp-chip-group-active {
+  color: #0c1622;
+}
+
 .lp-link-list {
   display: flex;
   flex-direction: column;
@@ -1042,6 +1056,20 @@ body::-webkit-scrollbar {
 .lp-nav button.active {
   color: var(--primary);
   background: var(--primary-strong);
+}
+
+[data-theme='notebar-light'] .lp-nav {
+  border-top-color: #b7c4d4;
+  background: #e3eaf2;
+}
+
+[data-theme='notebar-light'] .lp-nav button {
+  color: #445262;
+}
+
+[data-theme='notebar-light'] .lp-nav button.active {
+  color: #eefbfc;
+  background: #2f6f72;
 }
 
 .lp-nav button .material-symbols-outlined {
