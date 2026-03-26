@@ -373,6 +373,11 @@ body::-webkit-scrollbar {
   color: var(--primary-light);
 }
 
+.lp-chip.active.lp-chip-group-active {
+  background: var(--group-accent, var(--primary-strong));
+  color: #0c1622;
+}
+
 .lp-link-list {
   display: flex;
   flex-direction: column;

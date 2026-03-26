@@ -961,15 +961,21 @@ export default function App() {
               >
                 Ungrouped
               </button>
-              {groups.map((group) => (
-                <button
-                  key={group.id}
-                  className={`lp-chip ${activeGroup === group.id ? 'active' : ''}`}
-                  onClick={() => setActiveGroup(group.id)}
-                >
-                  {group.name}
-                </button>
-              ))}
+              {groups.map((group) => {
+                const isActive = activeGroup === group.id;
+                const groupColor = groupColorById.get(group.id);
+
+                return (
+                  <button
+                    key={group.id}
+                    className={`lp-chip ${isActive ? 'active lp-chip-group-active' : ''}`}
+                    style={isActive ? getGroupAccentStyle(groupColor) : undefined}
+                    onClick={() => setActiveGroup(group.id)}
+                  >
+                    {group.name}
+                  </button>
+                );
+              })}
             </div>
 
             <div className="lp-link-list" role="list">
