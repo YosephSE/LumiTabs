@@ -495,17 +495,26 @@ body::-webkit-scrollbar {
 
 .lp-group-picker-menu {
   position: absolute;
-  top: calc(100% + 6px);
+  top: 100%;
   right: 0;
   min-width: 190px;
   max-width: 240px;
   border-radius: 12px;
-  padding: 6px;
+  padding: 8px 6px 6px;
   background: var(--surface-low);
   border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
   box-shadow: var(--shadow-soft);
   z-index: 26;
   display: none;
+}
+
+.lp-group-picker-menu::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 0;
+  right: 0;
+  height: 8px;
 }
 
 .lp-group-picker:hover .lp-group-picker-menu,
