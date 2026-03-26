@@ -489,6 +489,71 @@ body::-webkit-scrollbar {
   gap: 4px;
 }
 
+.lp-group-picker {
+  position: relative;
+}
+
+.lp-group-picker-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 190px;
+  max-width: 240px;
+  border-radius: 12px;
+  padding: 6px;
+  background: var(--surface-low);
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  box-shadow: var(--shadow-soft);
+  z-index: 26;
+  display: none;
+}
+
+.lp-group-picker:hover .lp-group-picker-menu,
+.lp-group-picker:focus-within .lp-group-picker-menu {
+  display: block;
+}
+
+.lp-group-picker-item {
+  width: 100%;
+  border: 0;
+  border-radius: 9px;
+  padding: 7px 8px;
+  background: transparent;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.lp-group-picker-item:hover {
+  background: var(--surface-high);
+  color: var(--text);
+}
+
+.lp-group-picker-item.active {
+  color: var(--text);
+}
+
+.lp-group-picker-check {
+  font-size: 16px;
+  color: var(--primary);
+  opacity: 0;
+}
+
+.lp-group-picker-check.active {
+  opacity: 1;
+}
+
+.lp-group-picker-empty {
+  color: var(--text-subtle);
+  font-size: 11px;
+  padding: 7px 8px;
+}
+
 .lp-link-action {
   width: 32px;
   height: 32px;
@@ -1011,6 +1076,11 @@ body::-webkit-scrollbar {
   .lp-group-grid,
   .lp-transfer-grid {
     grid-template-columns: 1fr;
+  }
+
+  .lp-group-picker-menu {
+    right: -4px;
+    min-width: 180px;
   }
 
   .lp-nav {

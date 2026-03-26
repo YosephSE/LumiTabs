@@ -338,7 +338,8 @@ export default function App() {
     clearLinks,
     saveSettings,
     createGroup,
-    deleteGroup
+    deleteGroup,
+    moveLinkToGroup
   } = useStorage();
 
   const [nav, setNav] = useState<NavId>('links');
@@ -569,6 +570,10 @@ export default function App() {
 
   const handleOpen = (url: string) => {
     chrome.tabs.create({ url });
+  };
+
+  const handleMoveLinkToGroup = (url: string, groupId?: string) => {
+    void moveLinkToGroup(url, groupId);
   };
 
   const handleAddLink = async () => {
@@ -960,6 +965,49 @@ export default function App() {
                     </div>
 
                     <div className="lp-link-actions">
+                      <div className="lp-group-picker">
+                        <button
+                          className="lp-link-action"
+                          aria-label="Assign group"
+                          title="Assign group"
+                          aria-haspopup="true"
+                        >
+                          <span className="material-symbols-outlined">folder</span>
+                        </button>
+
+                        <div className="lp-group-picker-menu" role="menu" aria-label={`Assign group for ${link.title}`}>
+                          <button
+                            className={`lp-group-picker-item ${!link.groupId ? 'active' : ''}`}
+                            onClick={() => handleMoveLinkToGroup(link.url)}
+                            role="menuitemradio"
+                            aria-checked={!link.groupId}
+                          >
+                            <span className={`material-symbols-outlined lp-group-picker-check ${!link.groupId ? 'active' : ''}`}>check</span>
+                            <span>Ungrouped</span>
+                          </button>
+
+                          {groups.map((group) => {
+                            const isSelected = link.groupId === group.id;
+                            return (
+                              <button
+                                key={group.id}
+                                className={`lp-group-picker-item ${isSelected ? 'active' : ''}`}
+                                onClick={() => handleMoveLinkToGroup(link.url, group.id)}
+                                role="menuitemradio"
+                                aria-checked={isSelected}
+                              >
+                                <span className={`material-symbols-outlined lp-group-picker-check ${isSelected ? 'active' : ''}`}>check</span>
+                                <span>{group.name}</span>
+                              </button>
+                            );
+                          })}
+
+                          {groups.length === 0 ? (
+                            <div className="lp-group-picker-empty">No groups yet</div>
+                          ) : null}
+                        </div>
+                      </div>
+
                       <button
                         className="lp-link-action"
                         onClick={() => handleOpen(link.url)}
