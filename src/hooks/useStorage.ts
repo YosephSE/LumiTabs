@@ -76,7 +76,6 @@ export function useStorage() {
     setLinks(normalizedLinks);
     setGroups(storedGroups);
     setSettings(storedSettings);
-    migrateLocalStorage(normalizedLinks);
   };
 
   const addLinksBulk = useCallback(async (nextLinks: SavedLink[]) => {
@@ -237,24 +236,5 @@ export function useStorage() {
     deleteGroup,
     moveLinkToGroup
   };
-}
-
-function migrateLocalStorage(currentLinks: SavedLink[]) {
-  try {
-    const raw = window.localStorage.getItem('myLeads');
-    if (!raw) return;
-    const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== 'object') return;
-    const imported: SavedLink[] = Object.keys(parsed).map((url) => ({
-      url,
-      title: parsed[url],
-      createdAt: Date.now()
-    }));
-    const merged = [...imported, ...currentLinks];
-    chrome.storage.local.set({ [STORAGE_KEYS.savedLinks]: merged });
-    window.localStorage.removeItem('myLeads');
-  } catch (e) {
-    console.warn('Migration failed', e);
-  }
 }
 
