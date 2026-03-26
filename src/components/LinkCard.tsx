@@ -16,18 +16,24 @@ export function LinkCard({ link, groups, onOpen, onDelete, onMove }: LinkCardPro
 
   return (
     <div className="card" role="listitem">
-      <div className="card-header">
-        <img className="favicon" src={favicon} alt="favicon" />
-        <div className="card-title" title={link.title}>
-          {link.title}
+      <div className="card-main">
+        <div className="card-header">
+          <img className="favicon" src={favicon} alt="favicon" />
+          <div className="card-copy">
+            <div className="card-title" title={link.title}>
+              {link.title}
+            </div>
+            <div className="card-meta">
+              <span>{formatDistanceToNow(link.createdAt)}</span>
+              <span className="dot" aria-hidden="true" />
+              <div className="card-url" title={link.url}>
+                {link.url}
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="card-time">{formatDistanceToNow(link.createdAt)}</div>
-      </div>
 
-      <div className="card-group">{groupName}</div>
-
-      <div className="card-url" title={link.url}>
-        {link.url}
+        <div className="card-group">{groupName}</div>
       </div>
 
       <div className="card-actions">

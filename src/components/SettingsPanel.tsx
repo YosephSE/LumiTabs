@@ -110,13 +110,13 @@ export function SettingsPanel({
     <div className="section">
       <h2>Settings</h2>
 
-      <div className="setting">
+      <div className="setting card setting-card">
         <label>Theme</label>
-        <div className="pill-group">
+        <div className="pill-group option-grid">
           {THEME_OPTIONS.map((opt) => (
             <button
               key={opt.id}
-              className={`pill ${settings.theme === opt.id ? 'active' : ''}`}
+              className={`pill option-pill ${settings.theme === opt.id ? 'active' : ''}`}
               onClick={() => onUpdate({ theme: opt.id })}
             >
               {opt.label}
@@ -125,13 +125,13 @@ export function SettingsPanel({
         </div>
       </div>
 
-      <div className="setting">
+      <div className="setting card setting-card">
         <label>Font</label>
-        <div className="pill-group">
+        <div className="pill-group option-grid">
           {FONT_OPTIONS.map((opt) => (
             <button
               key={opt.id}
-              className={`pill ${settings.font === opt.id ? 'active' : ''}`}
+              className={`pill option-pill ${settings.font === opt.id ? 'active' : ''}`}
               onClick={() => onUpdate({ font: opt.id })}
             >
               {opt.label}
@@ -140,7 +140,7 @@ export function SettingsPanel({
         </div>
       </div>
 
-      <div className="setting">
+      <div className="setting card setting-card">
         <label>Shortcuts</label>
 
         <div className="shortcut-row">
@@ -166,7 +166,7 @@ export function SettingsPanel({
         )}
       </div>
 
-      <div className="setting">
+      <div className="setting card setting-card">
         <label>Groups</label>
 
         <div className="group-create-row">
@@ -208,7 +208,7 @@ export function SettingsPanel({
         )}
       </div>
 
-      <div className="setting">
+      <div className="setting card setting-card">
         <label>Data transfer</label>
 
         <div className="transfer-row">
@@ -255,7 +255,7 @@ export function SettingsPanel({
         <span className="hint">Import merges links by URL and skips duplicates.</span>
       </div>
 
-      <div className="setting">
+      <div className="setting card setting-card danger-card">
         <label>Danger zone</label>
         <button className="ghost danger" onClick={() => void handleClearAll()} disabled={linksCount === 0 || isClearingAll}>
           {isClearingAll ? 'Clearing...' : 'Clear All Links'}
