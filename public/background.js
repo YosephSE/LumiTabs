@@ -1,45 +1,73 @@
+const extensionApi = globalThis.browser || globalThis.chrome;
+
 const STORAGE_KEYS = {
   savedLinks: 'savedLinks'
 };
 
 const COMMAND_NAMES = {
+  activateAction: '_execute_action',
   saveCurrent: 'save_current'
 };
 
-const SHORTCUTS_PAGE_URL = 'chrome://extensions/shortcuts';
 let feedbackResetTimer = null;
 const FEEDBACK_DURATION_MS = 3500;
+const isFirefox = extensionApi.runtime.getURL('').startsWith('moz-extension://');
 
-chrome.runtime.onInstalled.addListener(async () => {
+extensionApi.runtime.onInstalled.addListener(async () => {
   await configurePanelBehavior();
   await notifyMissingShortcuts();
 });
 
-chrome.runtime.onStartup.addListener(async () => {
+extensionApi.runtime.onStartup.addListener(async () => {
   await configurePanelBehavior();
   await notifyMissingShortcuts();
 });
 
-chrome.commands.onCommand.addListener(async (command) => {
+if (isFirefox && extensionApi.action?.onClicked && extensionApi.sidebarAction?.open) {
+  extensionApi.action.onClicked.addListener(async () => {
+    await openFirefoxSidebar();
+  });
+}
+
+extensionApi.commands.onCommand.addListener(async (command) => {
   if (command === COMMAND_NAMES.saveCurrent) {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const [tab] = await extensionApi.tabs.query({ active: true, currentWindow: true });
     const result = await saveActiveTab(tab);
     notifyPanels({
       type: 'shortcut_save_result',
       status: result.status
     });
     await showSaveFeedback(result.status);
+    return;
+  }
+
+  if (isFirefox && command === COMMAND_NAMES.activateAction) {
+    await openFirefoxSidebar();
   }
 });
 
 async function configurePanelBehavior() {
-  try {
-    await chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
-  } catch (err) {
-    console.warn('setPanelBehavior failed', err);
+  if (!isFirefox && extensionApi.sidePanel?.setPanelBehavior) {
+    try {
+      await extensionApi.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
+    } catch (err) {
+      console.warn('setPanelBehavior failed', err);
+    }
   }
 
-  await chrome.action.setBadgeText({ text: '' });
+  await extensionApi.action.setBadgeText({ text: '' });
+}
+
+async function openFirefoxSidebar() {
+  if (!extensionApi.sidebarAction?.open) {
+    return;
+  }
+
+  try {
+    await extensionApi.sidebarAction.open();
+  } catch (err) {
+    console.warn('Failed to open Firefox sidebar', err);
+  }
 }
 
 async function saveActiveTab(tab) {
@@ -48,7 +76,7 @@ async function saveActiveTab(tab) {
   }
 
   try {
-    const result = await chrome.storage.local.get([STORAGE_KEYS.savedLinks]);
+    const result = await extensionApi.storage.local.get([STORAGE_KEYS.savedLinks]);
     const storedLinks = Array.isArray(result[STORAGE_KEYS.savedLinks]) ? result[STORAGE_KEYS.savedLinks] : [];
 
     const alreadySaved = storedLinks.some((entry) => (
@@ -65,7 +93,7 @@ async function saveActiveTab(tab) {
       createdAt: Date.now()
     };
 
-    await chrome.storage.local.set({
+    await extensionApi.storage.local.set({
       [STORAGE_KEYS.savedLinks]: [nextLink, ...storedLinks]
     });
 
@@ -77,9 +105,14 @@ async function saveActiveTab(tab) {
 }
 
 function notifyPanels(message) {
-  chrome.runtime.sendMessage(message, () => {
-    void chrome.runtime.lastError;
-  });
+  try {
+    const result = extensionApi.runtime.sendMessage(message);
+    if (result && typeof result.catch === 'function') {
+      result.catch(() => {});
+    }
+  } catch (_err) {
+    // No panel listeners is an expected state.
+  }
 }
 
 async function showSaveFeedback(status) {
@@ -98,8 +131,8 @@ async function showSaveFeedback(status) {
   }
 
   try {
-    await chrome.action.setBadgeBackgroundColor({ color: badgeColor });
-    await chrome.action.setBadgeText({ text: badgeText });
+    await extensionApi.action.setBadgeBackgroundColor({ color: badgeColor });
+    await extensionApi.action.setBadgeText({ text: badgeText });
 
     if (feedbackResetTimer) {
       clearTimeout(feedbackResetTimer);
@@ -107,19 +140,48 @@ async function showSaveFeedback(status) {
 
     feedbackResetTimer = setTimeout(() => {
       feedbackResetTimer = null;
-      void chrome.action.setBadgeText({ text: '' });
+      void extensionApi.action.setBadgeText({ text: '' });
     }, FEEDBACK_DURATION_MS);
   } catch (err) {
     console.warn('Action badge feedback failed', err);
   }
 }
 
-function getCommands() {
-  return new Promise((resolve) => {
-    chrome.commands.getAll((commands) => {
-      resolve(commands || []);
+async function getCommands() {
+  const getAll = extensionApi.commands?.getAll;
+
+  if (!getAll) {
+    return [];
+  }
+
+  try {
+    const result = getAll.call(extensionApi.commands);
+
+    if (result && typeof result.then === 'function') {
+      const entries = await result;
+      return Array.isArray(entries) ? entries : [];
+    }
+
+    return Array.isArray(result) ? result : [];
+  } catch (_err) {
+    return new Promise((resolve) => {
+      try {
+        getAll.call(extensionApi.commands, (commands) => {
+          resolve(commands || []);
+        });
+      } catch (_innerErr) {
+        resolve([]);
+      }
     });
-  });
+  }
+}
+
+function getShortcutSettingsHint() {
+  if (isFirefox) {
+    return 'Open Add-ons Manager and use Manage Extension Shortcuts.';
+  }
+
+  return 'Open extension shortcut settings.';
 }
 
 async function notifyMissingShortcuts() {
@@ -139,11 +201,11 @@ async function notifyMissingShortcuts() {
       return;
     }
 
-    await chrome.notifications.create('shortcut-assignment-warning', {
+    await extensionApi.notifications.create('shortcut-assignment-warning', {
       type: 'basic',
-      iconUrl: chrome.runtime.getURL('assets/img/icon.png'),
-      title: 'Tabs shortcuts not set',
-      message: `Assign shortcuts in ${SHORTCUTS_PAGE_URL}`
+      iconUrl: extensionApi.runtime.getURL('assets/img/icon.png'),
+      title: 'Tabs shortcut not set',
+      message: `Assign shortcuts in your browser settings. ${getShortcutSettingsHint()}`
     });
   } catch (err) {
     console.warn('Shortcut availability check failed', err);

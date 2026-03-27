@@ -4,16 +4,16 @@
   "name": "Tabs",
   "description": "Save and manage links in a lightweight side panel with themes, fonts, and shortcuts.",
   "action": {
-    "default_icon": "dist/chrome/assets/img/icon.png"
+    "default_icon": "assets/img/icon.png"
   },
   "permissions": ["storage", "sidePanel", "tabs", "activeTab", "notifications"],
   "host_permissions": ["file:///*"],
   "background": {
-    "service_worker": "dist/chrome/background.js",
+    "service_worker": "background.js",
     "type": "module"
   },
   "side_panel": {
-    "default_path": "dist/chrome/index.html"
+    "default_path": "index.html"
   },
   "commands": {
     "_execute_action": {
@@ -30,9 +30,9 @@
     }
   },
   "icons": {
-    "16": "dist/chrome/assets/img/icon.png",
-    "32": "dist/chrome/assets/img/icon.png",
-    "48": "dist/chrome/assets/img/icon.png",
-    "128": "dist/chrome/assets/img/icon.png"
+    "16": "assets/img/icon.png",
+    "32": "assets/img/icon.png",
+    "48": "assets/img/icon.png",
+    "128": "assets/img/icon.png"
   }
 }
