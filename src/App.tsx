@@ -32,9 +32,9 @@ const THEME_OPTIONS: {
   previewClass: string;
 }[] = [
   { id: 'system', label: 'Match System', icon: 'brightness_auto', previewClass: 'theme-preview-system' },
-  { id: 'notebar-light', label: 'Light', icon: 'light_mode', previewClass: 'theme-preview-light' },
-  { id: 'notebar-dark', label: 'Dark', icon: 'dark_mode', previewClass: 'theme-preview-dark' },
-  { id: 'notebar-ocean', label: 'Ocean', icon: 'water', previewClass: 'theme-preview-ocean' }
+  { id: 'light', label: 'Light', icon: 'light_mode', previewClass: 'theme-preview-light' },
+  { id: 'dark', label: 'Dark', icon: 'dark_mode', previewClass: 'theme-preview-dark' },
+  { id: 'ocean', label: 'Ocean', icon: 'water', previewClass: 'theme-preview-ocean' }
 ];
 
 type ShortcutStatus = {
@@ -58,7 +58,7 @@ type JsonImportPayload = {
 
 function computeTheme(theme: ThemeId) {
   if (theme === 'system') {
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'notebar-dark' : 'notebar-light';
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   }
 
   return theme;
@@ -1338,4 +1338,5 @@ export default function App() {
     </div>
   );
 }
+
 

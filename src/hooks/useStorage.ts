@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { LinkGroup, SavedLink, Settings } from '../types';
+import { LinkGroup, SavedLink, Settings, ThemeId } from '../types';
 
 const DEFAULT_SETTINGS: Settings = {
   theme: 'system',
@@ -24,6 +24,25 @@ function createGroupId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
+function normalizeTheme(theme: unknown): ThemeId {
+  if (theme === 'system' || theme === 'light' || theme === 'dark' || theme === 'ocean') {
+    return theme;
+  }
+
+  if (typeof theme === 'string') {
+    const normalized = theme.trim().toLowerCase();
+    const suffix = normalized.includes('-')
+      ? normalized.slice(normalized.lastIndexOf('-') + 1)
+      : normalized;
+
+    if (suffix === 'light' || suffix === 'dark' || suffix === 'ocean') {
+      return suffix;
+    }
+  }
+
+  return DEFAULT_SETTINGS.theme;
+}
+
 export function useStorage() {
   const [links, setLinks] = useState<SavedLink[]>([]);
   const [groups, setGroups] = useState<LinkGroup[]>([]);
@@ -40,7 +59,12 @@ export function useStorage() {
         setGroups(changes.linkGroups.newValue || []);
       }
       if (changes.settings) {
-        setSettings(changes.settings.newValue || DEFAULT_SETTINGS);
+        const nextSettings = (changes.settings.newValue || {}) as Partial<Settings>;
+        setSettings({
+          ...DEFAULT_SETTINGS,
+          ...nextSettings,
+          theme: normalizeTheme(nextSettings.theme)
+        });
       }
     };
     chrome.storage.onChanged.addListener(listener);
@@ -56,7 +80,12 @@ export function useStorage() {
 
     const storedLinks: SavedLink[] = result[STORAGE_KEYS.savedLinks] || [];
     const storedGroups: LinkGroup[] = result[STORAGE_KEYS.linkGroups] || [];
-    const storedSettings: Settings = { ...DEFAULT_SETTINGS, ...(result[STORAGE_KEYS.settings] || {}) };
+    const rawSettings = (result[STORAGE_KEYS.settings] || {}) as Partial<Settings>;
+    const storedSettings: Settings = {
+      ...DEFAULT_SETTINGS,
+      ...rawSettings,
+      theme: normalizeTheme(rawSettings.theme)
+    };
 
     const validGroupIds = new Set(storedGroups.map((group) => group.id));
     const normalizedLinks = storedLinks.map((link) => {
@@ -68,9 +97,20 @@ export function useStorage() {
     });
 
     const hasSanitizedLinks = normalizedLinks.some((link, idx) => link.groupId !== storedLinks[idx]?.groupId);
+    const hasSanitizedSettings = storedSettings.theme !== rawSettings.theme;
 
-    if (hasSanitizedLinks) {
-      await chrome.storage.local.set({ [STORAGE_KEYS.savedLinks]: normalizedLinks });
+    if (hasSanitizedLinks || hasSanitizedSettings) {
+      const nextStorage: Record<string, unknown> = {};
+
+      if (hasSanitizedLinks) {
+        nextStorage[STORAGE_KEYS.savedLinks] = normalizedLinks;
+      }
+
+      if (hasSanitizedSettings) {
+        nextStorage[STORAGE_KEYS.settings] = storedSettings;
+      }
+
+      await chrome.storage.local.set(nextStorage);
     }
 
     setLinks(normalizedLinks);
@@ -129,7 +169,11 @@ export function useStorage() {
 
   const saveSettings = useCallback(async (next: Partial<Settings>) => {
     setSettings((prev) => {
-      const merged = { ...prev, ...next };
+      const merged = {
+        ...prev,
+        ...next,
+        theme: next.theme ? normalizeTheme(next.theme) : prev.theme
+      };
       chrome.storage.local.set({ [STORAGE_KEYS.settings]: merged });
       return merged;
     });
@@ -237,4 +281,3 @@ export function useStorage() {
     moveLinkToGroup
   };
 }
-
