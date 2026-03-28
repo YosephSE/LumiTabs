@@ -33,7 +33,7 @@ npm run build:all      # outputs both
 ## Firefox (AMO-ready) Notes
 - Firefox manifest includes:
   - `browser_specific_settings.gecko.id = "tabs@app.local"`
-  - `data_collection_permissions.required = ["none"]`
+  - `browser_specific_settings.gecko.data_collection_permissions.required = ["none"]`
 - If you need a different AMO ID, edit `manifests/manifest.firefox.json`.
 
 ## Shortcuts

@@ -9,7 +9,7 @@
   "permissions": ["storage", "tabs", "activeTab", "notifications"],
   "host_permissions": ["file:///*"],
   "background": {
-    "service_worker": "background.js",
+    "scripts": ["background.js"],
     "type": "module"
   },
   "sidebar_action": {
@@ -39,10 +39,10 @@
   },
   "browser_specific_settings": {
     "gecko": {
-      "id": "tabs@app.local"
+      "id": "tabs@app.local",
+      "data_collection_permissions": {
+        "required": ["none"]
+      }
     }
-  },
-  "data_collection_permissions": {
-    "required": ["none"]
   }
 }
