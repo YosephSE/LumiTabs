@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { LinkGroup, SavedLink, Settings } from '../types';
+import { LinkGroup, SavedLink, Settings, ThemeId } from '../types';
+import { extensionApi } from '../utils/extensionApi';
 
 const DEFAULT_SETTINGS: Settings = {
   theme: 'system',
@@ -24,6 +25,25 @@ function createGroupId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
+function normalizeTheme(theme: unknown): ThemeId {
+  if (theme === 'system' || theme === 'light' || theme === 'dark' || theme === 'ocean') {
+    return theme;
+  }
+
+  if (typeof theme === 'string') {
+    const normalized = theme.trim().toLowerCase();
+    const suffix = normalized.includes('-')
+      ? normalized.slice(normalized.lastIndexOf('-') + 1)
+      : normalized;
+
+    if (suffix === 'light' || suffix === 'dark' || suffix === 'ocean') {
+      return suffix;
+    }
+  }
+
+  return DEFAULT_SETTINGS.theme;
+}
+
 export function useStorage() {
   const [links, setLinks] = useState<SavedLink[]>([]);
   const [groups, setGroups] = useState<LinkGroup[]>([]);
@@ -32,23 +52,30 @@ export function useStorage() {
   useEffect(() => {
     void load();
 
-    const listener = (changes: Record<string, chrome.storage.StorageChange>) => {
+    const listener = (changes: Record<string, { newValue?: unknown }>) => {
       if (changes.savedLinks) {
-        setLinks(changes.savedLinks.newValue || []);
+        const nextLinks = Array.isArray(changes.savedLinks.newValue) ? (changes.savedLinks.newValue as SavedLink[]) : [];
+        setLinks(nextLinks);
       }
       if (changes.linkGroups) {
-        setGroups(changes.linkGroups.newValue || []);
+        const nextGroups = Array.isArray(changes.linkGroups.newValue) ? (changes.linkGroups.newValue as LinkGroup[]) : [];
+        setGroups(nextGroups);
       }
       if (changes.settings) {
-        setSettings(changes.settings.newValue || DEFAULT_SETTINGS);
+        const nextSettings = (changes.settings.newValue || {}) as Partial<Settings>;
+        setSettings({
+          ...DEFAULT_SETTINGS,
+          ...nextSettings,
+          theme: normalizeTheme(nextSettings.theme)
+        });
       }
     };
-    chrome.storage.onChanged.addListener(listener);
-    return () => chrome.storage.onChanged.removeListener(listener);
+    extensionApi.storage.onChanged.addListener(listener);
+    return () => extensionApi.storage.onChanged.removeListener(listener);
   }, []);
 
   const load = async () => {
-    const result = await chrome.storage.local.get([
+    const result = await extensionApi.storage.local.get([
       STORAGE_KEYS.savedLinks,
       STORAGE_KEYS.settings,
       STORAGE_KEYS.linkGroups
@@ -56,7 +83,12 @@ export function useStorage() {
 
     const storedLinks: SavedLink[] = result[STORAGE_KEYS.savedLinks] || [];
     const storedGroups: LinkGroup[] = result[STORAGE_KEYS.linkGroups] || [];
-    const storedSettings: Settings = { ...DEFAULT_SETTINGS, ...(result[STORAGE_KEYS.settings] || {}) };
+    const rawSettings = (result[STORAGE_KEYS.settings] || {}) as Partial<Settings>;
+    const storedSettings: Settings = {
+      ...DEFAULT_SETTINGS,
+      ...rawSettings,
+      theme: normalizeTheme(rawSettings.theme)
+    };
 
     const validGroupIds = new Set(storedGroups.map((group) => group.id));
     const normalizedLinks = storedLinks.map((link) => {
@@ -68,9 +100,20 @@ export function useStorage() {
     });
 
     const hasSanitizedLinks = normalizedLinks.some((link, idx) => link.groupId !== storedLinks[idx]?.groupId);
+    const hasSanitizedSettings = storedSettings.theme !== rawSettings.theme;
 
-    if (hasSanitizedLinks) {
-      await chrome.storage.local.set({ [STORAGE_KEYS.savedLinks]: normalizedLinks });
+    if (hasSanitizedLinks || hasSanitizedSettings) {
+      const nextStorage: Record<string, unknown> = {};
+
+      if (hasSanitizedLinks) {
+        nextStorage[STORAGE_KEYS.savedLinks] = normalizedLinks;
+      }
+
+      if (hasSanitizedSettings) {
+        nextStorage[STORAGE_KEYS.settings] = storedSettings;
+      }
+
+      await extensionApi.storage.local.set(nextStorage);
     }
 
     setLinks(normalizedLinks);
@@ -83,7 +126,7 @@ export function useStorage() {
       return { added: 0, skipped: 0 };
     }
 
-    const result = await chrome.storage.local.get([STORAGE_KEYS.savedLinks]);
+    const result = await extensionApi.storage.local.get([STORAGE_KEYS.savedLinks]);
     const storedLinks: SavedLink[] = result[STORAGE_KEYS.savedLinks] || [];
     const seenUrls = new Set(storedLinks.map((savedLink) => savedLink.url));
     const accepted: SavedLink[] = [];
@@ -104,7 +147,7 @@ export function useStorage() {
     }
 
     const next = [...accepted.reverse(), ...storedLinks];
-    await chrome.storage.local.set({ [STORAGE_KEYS.savedLinks]: next });
+    await extensionApi.storage.local.set({ [STORAGE_KEYS.savedLinks]: next });
     setLinks(next);
     return { added: accepted.length, skipped };
   }, []);
@@ -117,20 +160,24 @@ export function useStorage() {
   const removeLink = useCallback(async (url: string) => {
     setLinks((prev) => {
       const next = prev.filter((l) => l.url !== url);
-      chrome.storage.local.set({ [STORAGE_KEYS.savedLinks]: next });
+      extensionApi.storage.local.set({ [STORAGE_KEYS.savedLinks]: next });
       return next;
     });
   }, []);
 
   const clearLinks = useCallback(async () => {
     setLinks([]);
-    await chrome.storage.local.set({ [STORAGE_KEYS.savedLinks]: [] });
+    await extensionApi.storage.local.set({ [STORAGE_KEYS.savedLinks]: [] });
   }, []);
 
   const saveSettings = useCallback(async (next: Partial<Settings>) => {
     setSettings((prev) => {
-      const merged = { ...prev, ...next };
-      chrome.storage.local.set({ [STORAGE_KEYS.settings]: merged });
+      const merged = {
+        ...prev,
+        ...next,
+        theme: next.theme ? normalizeTheme(next.theme) : prev.theme
+      };
+      extensionApi.storage.local.set({ [STORAGE_KEYS.settings]: merged });
       return merged;
     });
   }, []);
@@ -155,7 +202,7 @@ export function useStorage() {
       };
 
       const next = [...prev, group].sort((a, b) => a.name.localeCompare(b.name));
-      chrome.storage.local.set({ [STORAGE_KEYS.linkGroups]: next });
+      extensionApi.storage.local.set({ [STORAGE_KEYS.linkGroups]: next });
       output = { group, created: true };
       return next;
     });
@@ -173,7 +220,7 @@ export function useStorage() {
 
       didDelete = true;
       const next = prev.filter((group) => group.id !== groupId);
-      chrome.storage.local.set({ [STORAGE_KEYS.linkGroups]: next });
+      extensionApi.storage.local.set({ [STORAGE_KEYS.linkGroups]: next });
       return next;
     });
 
@@ -191,7 +238,7 @@ export function useStorage() {
       });
 
       if (didChange) {
-        chrome.storage.local.set({ [STORAGE_KEYS.savedLinks]: next });
+        extensionApi.storage.local.set({ [STORAGE_KEYS.savedLinks]: next });
       }
 
       return next;
@@ -216,7 +263,7 @@ export function useStorage() {
       });
 
       if (didChange) {
-        chrome.storage.local.set({ [STORAGE_KEYS.savedLinks]: next });
+        extensionApi.storage.local.set({ [STORAGE_KEYS.savedLinks]: next });
       }
 
       return next;
@@ -237,4 +284,6 @@ export function useStorage() {
     moveLinkToGroup
   };
 }
+
+
 
