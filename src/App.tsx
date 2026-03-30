@@ -2,6 +2,14 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useStorage } from './hooks/useStorage';
 import { FontId, LinkGroup, SavedLink, ThemeId } from './types';
+import {
+  ExtensionCommand,
+  extensionApi,
+  getAllCommands,
+  getShortcutSettingsFallbackUrl,
+  getShortcutSettingsHint,
+  openShortcutSettings
+} from './utils/extensionApi';
 import { formatDistanceToNow } from './utils/time';
 import { normalizeUrl } from './utils/url';
 
@@ -32,9 +40,9 @@ const THEME_OPTIONS: {
   previewClass: string;
 }[] = [
   { id: 'system', label: 'Match System', icon: 'brightness_auto', previewClass: 'theme-preview-system' },
-  { id: 'notebar-light', label: 'Light', icon: 'light_mode', previewClass: 'theme-preview-light' },
-  { id: 'notebar-dark', label: 'Dark', icon: 'dark_mode', previewClass: 'theme-preview-dark' },
-  { id: 'notebar-ocean', label: 'Ocean', icon: 'water', previewClass: 'theme-preview-ocean' }
+  { id: 'light', label: 'Light', icon: 'light_mode', previewClass: 'theme-preview-light' },
+  { id: 'dark', label: 'Dark', icon: 'dark_mode', previewClass: 'theme-preview-dark' },
+  { id: 'ocean', label: 'Ocean', icon: 'water', previewClass: 'theme-preview-ocean' }
 ];
 
 type ShortcutStatus = {
@@ -58,7 +66,7 @@ type JsonImportPayload = {
 
 function computeTheme(theme: ThemeId) {
   if (theme === 'system') {
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'notebar-dark' : 'notebar-light';
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   }
 
   return theme;
@@ -429,11 +437,7 @@ export default function App() {
 
   const loadShortcutStatus = useCallback(async () => {
     try {
-      const commands = await new Promise<chrome.commands.Command[]>((resolve) => {
-        chrome.commands.getAll((entries) => {
-          resolve(entries || []);
-        });
-      });
+      const commands = (await getAllCommands()) as ExtensionCommand[];
 
       const activateCommand = commands.find((entry) => entry.name === COMMAND_ACTIVATE_EXTENSION);
       const command = commands.find((entry) => entry.name === COMMAND_SAVE_CURRENT);
@@ -476,7 +480,7 @@ export default function App() {
   useEffect(() => {
     const handler = (
       message: unknown,
-      _sender: chrome.runtime.MessageSender,
+      _sender: unknown,
       sendResponse: (response?: unknown) => void
     ) => {
       const payload = message as { type?: string; status?: string };
@@ -497,8 +501,8 @@ export default function App() {
       sendResponse({ handled: true });
     };
 
-    chrome.runtime.onMessage.addListener(handler);
-    return () => chrome.runtime.onMessage.removeListener(handler);
+    extensionApi.runtime.onMessage.addListener(handler);
+    return () => extensionApi.runtime.onMessage.removeListener(handler);
   }, [pushToast]);
 
   useEffect(() => {
@@ -573,7 +577,7 @@ export default function App() {
   }, [isClearAllModalOpen, isClearingAll]);
 
   const handleSaveCurrent = async () => {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const [tab] = await extensionApi.tabs.query({ active: true, currentWindow: true });
     if (!tab?.url) {
       pushToast('Cannot save this page');
       return;
@@ -583,7 +587,7 @@ export default function App() {
   };
 
   const handleSaveAll = async () => {
-    const tabs = await chrome.tabs.query({ currentWindow: true });
+    const tabs = await extensionApi.tabs.query({ currentWindow: true });
     const targetGroupId = resolveTargetGroupId();
     const nextLinks: SavedLink[] = [];
 
@@ -605,7 +609,9 @@ export default function App() {
   };
 
   const handleOpen = (url: string) => {
-    chrome.tabs.create({ url });
+    void Promise.resolve(extensionApi.tabs.create({ url })).catch(() => {
+      pushToast('Failed to open tab');
+    });
   };
 
   const handleMoveLinkToGroup = (url: string, groupId?: string) => {
@@ -803,15 +809,21 @@ export default function App() {
     }
   };
 
-  const handleOpenShortcutSettings = () => {
-    chrome.tabs.create({ url: 'chrome://extensions/shortcuts' }, () => {
-      if (!chrome.runtime.lastError) {
-        return;
-      }
+  const handleOpenShortcutSettings = async () => {
+    const opened = await openShortcutSettings();
+    if (opened) {
+      return;
+    }
 
-      console.warn('Failed to open shortcut settings', chrome.runtime.lastError);
-      pushToast('Open chrome://extensions/shortcuts manually');
-    });
+    const fallbackUrl = getShortcutSettingsFallbackUrl();
+
+    try {
+      await extensionApi.tabs.create({ url: fallbackUrl });
+      pushToast(`Opened ${fallbackUrl}`);
+    } catch (err) {
+      console.warn('Failed to open shortcut settings', err);
+      pushToast(`Open shortcut settings manually. ${getShortcutSettingsHint()}`);
+    }
   };
 
   const handleImportFile = async (format: TransferFormat, event: React.ChangeEvent<HTMLInputElement>) => {
@@ -1142,13 +1154,13 @@ export default function App() {
                   </div>
                 </div>
                 <div className="lp-shortcut-actions">
-                  <button className="lp-secondary-btn" onClick={handleOpenShortcutSettings}>Manage in Chrome</button>
+                  <button className="lp-secondary-btn" onClick={() => void handleOpenShortcutSettings()}>Manage Shortcuts</button>
                   <button className="lp-secondary-btn" onClick={() => void loadShortcutStatus()}>Refresh</button>
                 </div>
                 <p className={`lp-muted-note ${shortcutStatus.isMissing ? 'error' : ''}`}>
                   {shortcutStatus.isMissing
-                    ? 'Shortcut is not set. Assign it in chrome://extensions/shortcuts.'
-                    : 'Shortcut values are managed in chrome://extensions/shortcuts.'}
+                    ? `Shortcut is not set. ${getShortcutSettingsHint()}`
+                    : `Shortcut values are managed by your browser. ${getShortcutSettingsHint()}`}
                 </p>
               </section>
             </div>
@@ -1338,4 +1350,3 @@ export default function App() {
     </div>
   );
 }
-

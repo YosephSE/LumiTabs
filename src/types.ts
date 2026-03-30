@@ -11,7 +11,7 @@ export type LinkGroup = {
   createdAt: number;
 };
 
-export type ThemeId = 'system' | 'notebar-light' | 'notebar-dark' | 'notebar-ocean';
+export type ThemeId = 'system' | 'light' | 'dark' | 'ocean';
 
 export type FontId = 'manrope' | 'source-sans' | 'work-sans';
 

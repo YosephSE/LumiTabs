@@ -5,7 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "npm run build:chrome",
+    "build:chrome": "vite build --mode chrome && node scripts/apply-manifest.mjs chrome",
+    "build:firefox": "vite build --mode firefox && node scripts/apply-manifest.mjs firefox",
+    "build:all": "npm run build:chrome && npm run build:firefox",
     "preview": "vite preview"
   },
   "dependencies": {
