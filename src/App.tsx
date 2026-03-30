@@ -609,7 +609,9 @@ export default function App() {
   };
 
   const handleOpen = (url: string) => {
-    extensionApi.tabs.create({ url });
+    void Promise.resolve(extensionApi.tabs.create({ url })).catch(() => {
+      pushToast('Failed to open tab');
+    });
   };
 
   const handleMoveLinkToGroup = (url: string, groupId?: string) => {
@@ -1348,10 +1350,3 @@ export default function App() {
     </div>
   );
 }
-
-
-
-
-
-
-

@@ -44,6 +44,10 @@ function normalizeTheme(theme: unknown): ThemeId {
   return DEFAULT_SETTINGS.theme;
 }
 
+function setStorageLocalSafely(data: Record<string, unknown>) {
+  void Promise.resolve(extensionApi.storage.local.set(data)).catch(() => undefined);
+}
+
 export function useStorage() {
   const [links, setLinks] = useState<SavedLink[]>([]);
   const [groups, setGroups] = useState<LinkGroup[]>([]);
@@ -160,7 +164,7 @@ export function useStorage() {
   const removeLink = useCallback(async (url: string) => {
     setLinks((prev) => {
       const next = prev.filter((l) => l.url !== url);
-      extensionApi.storage.local.set({ [STORAGE_KEYS.savedLinks]: next });
+      setStorageLocalSafely({ [STORAGE_KEYS.savedLinks]: next });
       return next;
     });
   }, []);
@@ -177,7 +181,7 @@ export function useStorage() {
         ...next,
         theme: next.theme ? normalizeTheme(next.theme) : prev.theme
       };
-      extensionApi.storage.local.set({ [STORAGE_KEYS.settings]: merged });
+      setStorageLocalSafely({ [STORAGE_KEYS.settings]: merged });
       return merged;
     });
   }, []);
@@ -202,7 +206,7 @@ export function useStorage() {
       };
 
       const next = [...prev, group].sort((a, b) => a.name.localeCompare(b.name));
-      extensionApi.storage.local.set({ [STORAGE_KEYS.linkGroups]: next });
+      setStorageLocalSafely({ [STORAGE_KEYS.linkGroups]: next });
       output = { group, created: true };
       return next;
     });
@@ -220,7 +224,7 @@ export function useStorage() {
 
       didDelete = true;
       const next = prev.filter((group) => group.id !== groupId);
-      extensionApi.storage.local.set({ [STORAGE_KEYS.linkGroups]: next });
+      setStorageLocalSafely({ [STORAGE_KEYS.linkGroups]: next });
       return next;
     });
 
@@ -238,7 +242,7 @@ export function useStorage() {
       });
 
       if (didChange) {
-        extensionApi.storage.local.set({ [STORAGE_KEYS.savedLinks]: next });
+        setStorageLocalSafely({ [STORAGE_KEYS.savedLinks]: next });
       }
 
       return next;
@@ -263,7 +267,7 @@ export function useStorage() {
       });
 
       if (didChange) {
-        extensionApi.storage.local.set({ [STORAGE_KEYS.savedLinks]: next });
+        setStorageLocalSafely({ [STORAGE_KEYS.savedLinks]: next });
       }
 
       return next;
@@ -284,6 +288,4 @@ export function useStorage() {
     moveLinkToGroup
   };
 }
-
-
 
