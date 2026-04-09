@@ -90,7 +90,8 @@ async function saveActiveTab(tab) {
     const nextLink = {
       url: tab.url,
       title: tab.title || tab.url,
-      createdAt: Date.now()
+      createdAt: Date.now(),
+      faviconUrl: typeof tab.favIconUrl === 'string' ? tab.favIconUrl : undefined
     };
 
     await extensionApi.storage.local.set({
