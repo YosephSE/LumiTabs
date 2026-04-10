@@ -57,6 +57,7 @@ type ImportedLinkRecord = {
   createdAt: number;
   groupId?: string;
   groupName?: string;
+  faviconUrl?: string;
 };
 
 type JsonImportPayload = {
@@ -120,37 +121,69 @@ function getAvatarInitial(title: string, url: string) {
   return match ? match[0].toUpperCase() : '?';
 }
 
+function getFaviconCandidates(url: string, faviconUrl?: string) {
+  const candidates = new Set<string>();
+
+  if (typeof faviconUrl === 'string' && faviconUrl.trim()) {
+    candidates.add(faviconUrl.trim());
+  }
+
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return Array.from(candidates);
+    }
+
+    candidates.add(`${parsed.origin}/favicon.ico`);
+    candidates.add(`${parsed.origin}/favicon.svg`);
+    candidates.add(`${parsed.origin}/apple-touch-icon.png`);
+    candidates.add(`https://www.google.com/s2/favicons?domain_url=${encodeURIComponent(parsed.origin)}&sz=64`);
+  } catch (_err) {
+    candidates.add(`https://www.google.com/s2/favicons?domain_url=${encodeURIComponent(url)}&sz=64`);
+  }
+
+  return Array.from(candidates);
+}
+
 type LinkIconProps = {
   url: string;
   title: string;
+  faviconUrl?: string;
 };
 
-function LinkIcon({ url, title }: LinkIconProps) {
-  const [hasError, setHasError] = useState(false);
+function LinkIcon({ url, title, faviconUrl }: LinkIconProps) {
+  const sources = useMemo(() => getFaviconCandidates(url, faviconUrl), [url, faviconUrl]);
+  const [sourceIndex, setSourceIndex] = useState(0);
 
   useEffect(() => {
-    setHasError(false);
-  }, [url]);
+    setSourceIndex(0);
+  }, [sources]);
 
-  if (hasError) {
+  const source = sources[sourceIndex];
+
+  if (!source) {
     return <div className="lp-link-avatar" aria-hidden="true">{getAvatarInitial(title, url)}</div>;
   }
-
-  const favicon = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(url)}&sz=64`;
 
   return (
     <img
       className="lp-link-icon"
-      src={favicon}
+      src={source}
       alt=""
       loading="lazy"
       referrerPolicy="no-referrer"
-      onError={() => setHasError(true)}
+      onError={() => setSourceIndex((current) => current + 1)}
     />
   );
 }
 
-function toSavedLink(candidate: { url?: unknown; title?: unknown; createdAt?: unknown; groupId?: unknown }) {
+function toSavedLink(candidate: {
+  url?: unknown;
+  title?: unknown;
+  createdAt?: unknown;
+  groupId?: unknown;
+  faviconUrl?: unknown;
+}) {
   const normalizedUrl = normalizeUrl(String(candidate.url || ''));
   if (!normalizedUrl) return null;
 
@@ -166,7 +199,11 @@ function toSavedLink(candidate: { url?: unknown; title?: unknown; createdAt?: un
     ? candidate.groupId.trim()
     : undefined;
 
-  return { url: normalizedUrl, title, createdAt, groupId } as SavedLink;
+  const faviconUrl = typeof candidate.faviconUrl === 'string' && candidate.faviconUrl.trim()
+    ? candidate.faviconUrl.trim()
+    : undefined;
+
+  return { url: normalizedUrl, title, createdAt, groupId, faviconUrl } as SavedLink;
 }
 
 function escapeCsvField(value: string) {
@@ -467,8 +504,14 @@ export default function App() {
     return activeGroup;
   };
 
-  const handleSaveUrl = async (url: string, title: string, showToast = true, groupId?: string) => {
-    const success = await addLink({ url, title, createdAt: Date.now(), groupId } as SavedLink);
+  const handleSaveUrl = async (
+    url: string,
+    title: string,
+    showToast = true,
+    groupId?: string,
+    faviconUrl?: string
+  ) => {
+    const success = await addLink({ url, title, createdAt: Date.now(), groupId, faviconUrl } as SavedLink);
 
     if (showToast) {
       pushToast(success ? 'Saved link' : 'Already exists');
@@ -583,7 +626,13 @@ export default function App() {
       return;
     }
 
-    await handleSaveUrl(tab.url, tab.title || tab.url, true, resolveTargetGroupId());
+    await handleSaveUrl(
+      tab.url,
+      tab.title || tab.url,
+      true,
+      resolveTargetGroupId(),
+      typeof tab.favIconUrl === 'string' ? tab.favIconUrl : undefined
+    );
   };
 
   const handleSaveAll = async () => {
@@ -600,7 +649,8 @@ export default function App() {
         url: tab.url,
         title: tab.title || tab.url,
         createdAt: Date.now(),
-        groupId: targetGroupId
+        groupId: targetGroupId,
+        faviconUrl: typeof tab.favIconUrl === 'string' ? tab.favIconUrl : undefined
       });
     }
 
@@ -783,7 +833,8 @@ export default function App() {
           url: link.url,
           title: link.title,
           createdAt: link.createdAt,
-          groupId: resolvedGroupId
+          groupId: resolvedGroupId,
+          faviconUrl: link.faviconUrl
         });
       }
 
@@ -1004,7 +1055,7 @@ export default function App() {
                   <article className="lp-link-card" key={link.url} role="listitem">
                     <div className="lp-link-main">
                       <div className="lp-link-icon-wrap">
-                        <LinkIcon url={link.url} title={link.title} />
+                        <LinkIcon url={link.url} title={link.title} faviconUrl={link.faviconUrl} />
                       </div>
 
                       <div className="lp-link-copy">

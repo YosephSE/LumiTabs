@@ -3,6 +3,7 @@ export type SavedLink = {
   title: string;
   createdAt: number;
   groupId?: string;
+  faviconUrl?: string;
 };
 
 export type LinkGroup = {
