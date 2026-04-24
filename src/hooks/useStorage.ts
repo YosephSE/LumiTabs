@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { LinkGroup, SavedLink, Settings, ThemeId } from '../types';
+import { LinkGroup, OnboardingState, SavedLink, Settings, ThemeId } from '../types';
 import { extensionApi } from '../utils/extensionApi';
 
 const DEFAULT_SETTINGS: Settings = {
@@ -7,10 +7,16 @@ const DEFAULT_SETTINGS: Settings = {
   font: 'manrope'
 };
 
+const DEFAULT_ONBOARDING_STATE: OnboardingState = {
+  completed: false,
+  version: 1
+};
+
 const STORAGE_KEYS = {
   savedLinks: 'savedLinks',
   settings: 'settings',
-  linkGroups: 'linkGroups'
+  linkGroups: 'linkGroups',
+  onboardingState: 'onboardingState'
 };
 
 function normalizeGroupName(name: string) {
@@ -48,10 +54,29 @@ function setStorageLocalSafely(data: Record<string, unknown>) {
   void Promise.resolve(extensionApi.storage.local.set(data)).catch(() => undefined);
 }
 
+function normalizeOnboardingState(value: unknown): OnboardingState {
+  if (!value || typeof value !== 'object') {
+    return DEFAULT_ONBOARDING_STATE;
+  }
+
+  const candidate = value as Partial<OnboardingState>;
+  const completedAt = typeof candidate.completedAt === 'number' && Number.isFinite(candidate.completedAt)
+    ? candidate.completedAt
+    : undefined;
+
+  return {
+    completed: Boolean(candidate.completed),
+    completedAt,
+    version: 1
+  };
+}
+
 export function useStorage() {
   const [links, setLinks] = useState<SavedLink[]>([]);
   const [groups, setGroups] = useState<LinkGroup[]>([]);
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
+  const [onboardingState, setOnboardingState] = useState<OnboardingState>(DEFAULT_ONBOARDING_STATE);
+  const [isStorageReady, setIsStorageReady] = useState(false);
 
   useEffect(() => {
     void load();
@@ -73,6 +98,9 @@ export function useStorage() {
           theme: normalizeTheme(nextSettings.theme)
         });
       }
+      if (changes.onboardingState) {
+        setOnboardingState(normalizeOnboardingState(changes.onboardingState.newValue));
+      }
     };
     extensionApi.storage.onChanged.addListener(listener);
     return () => extensionApi.storage.onChanged.removeListener(listener);
@@ -82,7 +110,8 @@ export function useStorage() {
     const result = await extensionApi.storage.local.get([
       STORAGE_KEYS.savedLinks,
       STORAGE_KEYS.settings,
-      STORAGE_KEYS.linkGroups
+      STORAGE_KEYS.linkGroups,
+      STORAGE_KEYS.onboardingState
     ]);
 
     const storedLinks: SavedLink[] = result[STORAGE_KEYS.savedLinks] || [];
@@ -93,6 +122,7 @@ export function useStorage() {
       ...rawSettings,
       theme: normalizeTheme(rawSettings.theme)
     };
+    const storedOnboardingState = normalizeOnboardingState(result[STORAGE_KEYS.onboardingState]);
 
     const validGroupIds = new Set(storedGroups.map((group) => group.id));
     const normalizedLinks = storedLinks.map((link) => {
@@ -123,6 +153,8 @@ export function useStorage() {
     setLinks(normalizedLinks);
     setGroups(storedGroups);
     setSettings(storedSettings);
+    setOnboardingState(storedOnboardingState);
+    setIsStorageReady(true);
   };
 
   const addLinksBulk = useCallback(async (nextLinks: SavedLink[]) => {
@@ -184,6 +216,17 @@ export function useStorage() {
       setStorageLocalSafely({ [STORAGE_KEYS.settings]: merged });
       return merged;
     });
+  }, []);
+
+  const completeOnboarding = useCallback(async () => {
+    const next: OnboardingState = {
+      completed: true,
+      completedAt: Date.now(),
+      version: 1
+    };
+
+    setOnboardingState(next);
+    await extensionApi.storage.local.set({ [STORAGE_KEYS.onboardingState]: next });
   }, []);
 
   const createGroup = useCallback(async (name: string) => {
@@ -283,6 +326,9 @@ export function useStorage() {
     removeLink,
     clearLinks,
     saveSettings,
+    onboardingState,
+    isStorageReady,
+    completeOnboarding,
     createGroup,
     deleteGroup,
     moveLinkToGroup

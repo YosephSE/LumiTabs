@@ -20,3 +20,9 @@ export type Settings = {
   theme: ThemeId;
   font: FontId;
 };
+
+export type OnboardingState = {
+  completed: boolean;
+  completedAt?: number;
+  version: 1;
+};

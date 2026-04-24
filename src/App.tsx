@@ -20,6 +20,12 @@ const NAVS = [
 
 type NavId = (typeof NAVS)[number]['id'];
 type TransferFormat = 'csv' | 'json';
+type SaveCurrentStatus = 'saved' | 'duplicate' | 'unavailable' | 'failed';
+type OnboardingActionFeedback = {
+  tone: 'success' | 'warning' | 'error' | 'info';
+  icon: string;
+  message: string;
+};
 
 const GROUP_FILTER_ALL = '__all__';
 const GROUP_FILTER_UNGROUPED = '__ungrouped__';
@@ -43,6 +49,55 @@ const THEME_OPTIONS: {
   { id: 'light', label: 'Light', icon: 'light_mode', previewClass: 'theme-preview-light' },
   { id: 'dark', label: 'Dark', icon: 'dark_mode', previewClass: 'theme-preview-dark' },
   { id: 'ocean', label: 'Ocean', icon: 'water', previewClass: 'theme-preview-ocean' }
+];
+
+type OnboardingStepAction = 'save-current' | 'settings';
+
+const ONBOARDING_STEPS: {
+  icon: string;
+  title: string;
+  description: string;
+  highlights: string[];
+  action?: {
+    label: string;
+    icon: string;
+    type: OnboardingStepAction;
+  };
+}[] = [
+  {
+    icon: 'dashboard',
+    title: 'Welcome to Tabs',
+    description: 'Keep useful pages close in a lightweight side panel that stays out of your browsing flow.',
+    highlights: ['Save pages without leaving your current tab', 'Open the panel from the toolbar or shortcut']
+  },
+  {
+    icon: 'bookmark_add',
+    title: 'Save links fast',
+    description: 'Capture the current tab or every open tab in the current window.',
+    highlights: ['Duplicates are skipped automatically', 'Saved pages keep their title and favicon when available'],
+    action: {
+      label: 'Try Save Current',
+      icon: 'bookmark',
+      type: 'save-current'
+    }
+  },
+  {
+    icon: 'folder_special',
+    title: 'Organize and find',
+    description: 'Use groups, search, and quick actions to keep saved pages easy to scan.',
+    highlights: ['Filter links by group or search text', 'Open, move, or delete links from each row']
+  },
+  {
+    icon: 'tune',
+    title: 'Make it yours',
+    description: 'Choose a theme, pick a font, and manage keyboard shortcuts from Settings.',
+    highlights: ['Themes and fonts apply across the side panel', 'Shortcut values stay managed by your browser'],
+    action: {
+      label: 'Open Settings',
+      icon: 'settings',
+      type: 'settings'
+    }
+  }
 ];
 
 type ShortcutStatus = {
@@ -390,16 +445,202 @@ function downloadFile(content: string, mimeType: string, extension: TransferForm
   URL.revokeObjectURL(url);
 }
 
+type OnboardingModalProps = {
+  onComplete: () => Promise<void>;
+  onTrySaveCurrent: () => Promise<SaveCurrentStatus>;
+  onOpenSettings: () => Promise<void>;
+};
+
+function OnboardingModal({ onComplete, onTrySaveCurrent, onOpenSettings }: OnboardingModalProps) {
+  const [stepIndex, setStepIndex] = useState(0);
+  const [isCompleting, setIsCompleting] = useState(false);
+  const [isActionRunning, setIsActionRunning] = useState(false);
+  const [actionFeedback, setActionFeedback] = useState<OnboardingActionFeedback | null>(null);
+  const currentStep = ONBOARDING_STEPS[stepIndex];
+  const isFirstStep = stepIndex === 0;
+  const isLastStep = stepIndex === ONBOARDING_STEPS.length - 1;
+
+  const handleComplete = useCallback(async () => {
+    if (isCompleting) return;
+
+    setIsCompleting(true);
+    try {
+      await onComplete();
+    } finally {
+      setIsCompleting(false);
+    }
+  }, [isCompleting, onComplete]);
+
+  useEffect(() => {
+    setActionFeedback(null);
+    setIsActionRunning(false);
+  }, [stepIndex]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        void handleComplete();
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [handleComplete]);
+
+  const getSaveCurrentFeedback = (status: SaveCurrentStatus): OnboardingActionFeedback => {
+    if (status === 'saved') {
+      return {
+        tone: 'success',
+        icon: 'check_circle',
+        message: 'Saved this tab. Finish onboarding to see it in your Links list.'
+      };
+    }
+
+    if (status === 'duplicate') {
+      return {
+        tone: 'info',
+        icon: 'info',
+        message: 'This tab was already saved, so Tabs skipped the duplicate.'
+      };
+    }
+
+    if (status === 'unavailable') {
+      return {
+        tone: 'warning',
+        icon: 'warning',
+        message: 'This page cannot be saved. Try it on a normal website tab.'
+      };
+    }
+
+    return {
+      tone: 'error',
+      icon: 'error',
+      message: 'Tabs could not save this tab. You can still add links manually later.'
+    };
+  };
+
+  const handleStepAction = async () => {
+    if (!currentStep.action || isActionRunning) return;
+
+    setIsActionRunning(true);
+    setActionFeedback(null);
+
+    if (currentStep.action.type === 'save-current') {
+      try {
+        const status = await onTrySaveCurrent();
+        setActionFeedback(getSaveCurrentFeedback(status));
+      } finally {
+        setIsActionRunning(false);
+      }
+      return;
+    }
+
+    try {
+      await onOpenSettings();
+    } finally {
+      setIsActionRunning(false);
+    }
+  };
+
+  return (
+    <div className="lp-onboarding-backdrop" role="presentation">
+      <section
+        className="lp-onboarding-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="onboarding-title"
+        aria-describedby="onboarding-description"
+      >
+        <div className="lp-onboarding-topline">
+          <span>Step {stepIndex + 1} of {ONBOARDING_STEPS.length}</span>
+          <button className="lp-onboarding-skip" onClick={() => void handleComplete()} disabled={isCompleting}>
+            Skip
+          </button>
+        </div>
+
+        <div className="lp-onboarding-progress" aria-label="Onboarding progress">
+          {ONBOARDING_STEPS.map((step, index) => (
+            <button
+              key={step.title}
+              className={index === stepIndex ? 'active' : ''}
+              onClick={() => setStepIndex(index)}
+              aria-label={`Go to ${step.title}`}
+              aria-current={index === stepIndex ? 'step' : undefined}
+            />
+          ))}
+        </div>
+
+        <div className="lp-onboarding-icon">
+          <span className="material-symbols-outlined filled">{currentStep.icon}</span>
+        </div>
+
+        <h3 id="onboarding-title">{currentStep.title}</h3>
+        <p id="onboarding-description">{currentStep.description}</p>
+
+        <ul className="lp-onboarding-list">
+          {currentStep.highlights.map((highlight) => (
+            <li key={highlight}>
+              <span className="material-symbols-outlined">check_circle</span>
+              <span>{highlight}</span>
+            </li>
+          ))}
+        </ul>
+
+        {currentStep.action ? (
+          <button className="lp-onboarding-action" onClick={() => void handleStepAction()} disabled={isActionRunning}>
+            <span className="material-symbols-outlined">{currentStep.action.icon}</span>
+            <span>{isActionRunning ? 'Working...' : currentStep.action.label}</span>
+          </button>
+        ) : null}
+
+        {actionFeedback ? (
+          <div className={`lp-onboarding-feedback ${actionFeedback.tone}`} role="status">
+            <span className="material-symbols-outlined">{actionFeedback.icon}</span>
+            <span>{actionFeedback.message}</span>
+          </div>
+        ) : null}
+
+        <div className="lp-onboarding-actions">
+          <button
+            className="lp-secondary-btn"
+            onClick={() => setStepIndex((current) => Math.max(0, current - 1))}
+            disabled={isFirstStep || isCompleting}
+          >
+            Back
+          </button>
+          <button
+            className="lp-onboarding-primary"
+            onClick={() => {
+              if (isLastStep) {
+                void handleComplete();
+                return;
+              }
+
+              setStepIndex((current) => Math.min(ONBOARDING_STEPS.length - 1, current + 1));
+            }}
+            disabled={isCompleting}
+          >
+            {isLastStep ? 'Finish' : 'Next'}
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 export default function App() {
   const {
     links,
     groups,
     settings,
+    onboardingState,
+    isStorageReady,
     addLink,
     addLinksBulk,
     removeLink,
     clearLinks,
     saveSettings,
+    completeOnboarding,
     createGroup,
     deleteGroup,
     moveLinkToGroup
@@ -619,20 +860,28 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [isClearAllModalOpen, isClearingAll]);
 
-  const handleSaveCurrent = async () => {
-    const [tab] = await extensionApi.tabs.query({ active: true, currentWindow: true });
-    if (!tab?.url) {
-      pushToast('Cannot save this page');
-      return;
-    }
+  const handleSaveCurrent = async (): Promise<SaveCurrentStatus> => {
+    try {
+      const [tab] = await extensionApi.tabs.query({ active: true, currentWindow: true });
+      if (!tab?.url) {
+        pushToast('Cannot save this page');
+        return 'unavailable';
+      }
 
-    await handleSaveUrl(
-      tab.url,
-      tab.title || tab.url,
-      true,
-      resolveTargetGroupId(),
-      typeof tab.favIconUrl === 'string' ? tab.favIconUrl : undefined
-    );
+      const success = await handleSaveUrl(
+        tab.url,
+        tab.title || tab.url,
+        true,
+        resolveTargetGroupId(),
+        typeof tab.favIconUrl === 'string' ? tab.favIconUrl : undefined
+      );
+
+      return success ? 'saved' : 'duplicate';
+    } catch (err) {
+      console.warn('Failed to save current tab', err);
+      pushToast('Failed to save link');
+      return 'failed';
+    }
   };
 
   const handleSaveAll = async () => {
@@ -923,6 +1172,14 @@ export default function App() {
       return next;
     });
   };
+
+  const handleOpenSettingsFromOnboarding = async () => {
+    setNav('settings');
+    await loadShortcutStatus();
+    await completeOnboarding();
+  };
+
+  const showOnboarding = isStorageReady && !onboardingState.completed;
 
   return (
     <div className="lp-shell">
@@ -1370,6 +1627,14 @@ export default function App() {
             </div>
           </section>
         </div>
+      ) : null}
+
+      {showOnboarding ? (
+        <OnboardingModal
+          onComplete={completeOnboarding}
+          onTrySaveCurrent={handleSaveCurrent}
+          onOpenSettings={handleOpenSettingsFromOnboarding}
+        />
       ) : null}
 
       <nav className="lp-nav">
