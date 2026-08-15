@@ -1,3 +1,5 @@
+
+
 # Tabs - Browser Extension (Chrome + Firefox)
 
 A side-panel/sidebar bookmark manager with themes, fonts, shortcuts, and metadata previews.
@@ -16,6 +18,8 @@ Built with React + Vite + TypeScript.
 npm install
 npm run dev
 ```
+
+> Note: `npm run dev` defaults to Chrome. Use `npm run dev --mode firefox` to develop the Firefox build.
 
 ## Build Targets
 ```bash
